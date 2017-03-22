@@ -8,14 +8,15 @@ var myId = web3.shh.newIdentity();
 
 var util = require('./util.js');
 
-var nodeName = 'unset';
+var nodeIdentityName = 'unset';
 var constellationNodes = [];
 var nodeNames = {};
 
-function startWhisperListeners(){
+function startConstellationListeners(){
   web3.shh.filter({"topics":["Constellation"]}).watch(function(err, msg) {
     if(err){console.log("ERROR:", err);};
     var message = util.Hex2a(msg.payload);
+    console.log('Message:', message);
     if(message.indexOf('request|publicKey') >= 0){
       getThisNodesConstellationPubKey(function(publicKey){
         var message = 'response|publicKey|'+publicKey;
@@ -42,6 +43,33 @@ function startWhisperListeners(){
   });
 }
 
+function startNodeNameListeners(){
+  web3.shh.filter({"topics":["NodeName"]}).watch(function(err, msg) {
+    if(err){console.log("ERROR:", err);};
+    var message = util.Hex2a(msg.payload);
+    console.log('Node Name Message:', message);
+    if(message.indexOf('request|nodeName') >= 0){
+      var response = 'response|nodeName|'+nodeIdentityName;
+      console.log('nodeName:', nodeIdentityName);
+      console.log('response:', response);
+      var hexString = new Buffer(response).toString('hex');
+      web3.shh.post({
+        "topics": ["NodeName"],
+        "from": myId,
+        "payload": hexString,
+        "ttl": 10,
+        "workToProve": 1
+      }, function(err, res){
+        if(err){console.log('err', err);}
+      });
+    } else if(message.indexOf('response|nodeName') >= 0){
+      // TODO: add check that this is a new node name
+      var nodeName = message.substring('response|nodeName|'.length+1);
+      nodeNames[msg.from] = nodeName;
+    }
+  });
+}
+
 function getThisNodesConstellationPubKey(cb){
   fs.readFile('../QuorumNetworkManager/Constellation/node.pub', function read(err, data) {
     if (err) { console.log('ERROR:', err); }
@@ -51,7 +79,6 @@ function getThisNodesConstellationPubKey(cb){
 }
 
 function requestConstellationKeys(cb){
-  console.log('Requesting constellation public keys:');
   var message = 'request|publicKey';
   var hexString = new Buffer(message).toString('hex');
   web3.shh.post({
@@ -67,16 +94,33 @@ function requestConstellationKeys(cb){
 }
 
 function displayConstellationKeys(cb){
+  console.log('Known constellation keys:');
   for(var i in constellationNodes){
     var node = constellationNodes[i];
-    console.log(node.publicKey + ' | ' + node.id);
+    var name = nodeNames[node.id];
+    console.log(node.publicKey + ' | ' + name);
   }
   cb();
 }
 
 function setNodeName(cb){
-  promt.get(['name'], function(err, node){
-    nodeName = node.name;
+  prompt.get(['name'], function(err, node){
+    nodeIdentityName = node.name;
+    cb();
+  });
+}
+
+function requestNodeNames(cb){
+  var message = 'request|nodeName';
+  var hexString = new Buffer(message).toString('hex');
+  web3.shh.post({
+    "topics": ["NodeName"],
+    "from": myId,
+    "payload": hexString,
+    "ttl": 10,
+    "workToProve": 1
+  }, function(err, res){
+    if(err){console.log('err', err);}
     cb();
   });
 }
@@ -94,7 +138,7 @@ function menu(){
         menu();
       });       
     } else if(o.option == 2){
-      requestOtherNodeNames(function(){
+      requestNodeNames(function(){
         menu();
       });
     } else if(o.option == 3){
@@ -114,5 +158,6 @@ function menu(){
   });
 }
 
-startWhisperListeners();
+startConstellationListeners();
+startNodeNameListeners();
 menu();

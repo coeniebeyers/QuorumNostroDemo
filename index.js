@@ -9,7 +9,7 @@ var myId = web3.shh.newIdentity();
 var util = require('./util.js');
 
 var nodeIdentityName = 'unset';
-var constellationNodes = [];
+var constellationNodes = {};
 var nodeNames = {};
 
 function startConstellationListeners(){
@@ -31,13 +31,8 @@ function startConstellationListeners(){
         });
       });
     } else if(message.indexOf('response|publicKey') >= 0){
-      // TODO: add check that this is a new constellation node
       var publicKey = message.substring('response|publicKey|'.length+1)
-      var constellationNode = {
-        id: msg.from,
-        publicKey: publicKey
-      };
-      constellationNodes.push(constellationNode); 
+      constellationNodes[msg.from] = publicKey;
     }
   });
 }
@@ -91,10 +86,10 @@ function requestConstellationKeys(cb){
 
 function displayConstellationKeys(cb){
   console.log('Known constellation keys:');
-  for(var i in constellationNodes){
-    var node = constellationNodes[i];
-    var name = nodeNames[node.id];
-    console.log(node.publicKey + ' | ' + name);
+  for(var id in constellationNodes){
+    var constellationKey = constellationNodes[id];
+    var name = nodeNames[id];
+    console.log(constellationKey +' | '+ name);
   }
   cb();
 }

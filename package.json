@@ -1,0 +1,23 @@
+{
+  "name": "quorum-nostro-demo",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/coeniebeyers/QuorumNostroDemo.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/coeniebeyers/QuorumNostroDemo/issues"
+  },
+  "homepage": "https://github.com/coeniebeyers/QuorumNostroDemo#readme",
+  "dependencies": {
+    "prompt": "^1.0.0",
+    "web3": "^0.18.2"
+  }
+}

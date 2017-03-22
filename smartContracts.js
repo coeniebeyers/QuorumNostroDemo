@@ -8,13 +8,15 @@ function submitContract(deployAccount, privateFor, cb){
   var tokenContractFilePath = __dirname + '/privateToken.sol';
   fs.readFile(tokenContractFilePath, 'utf8', function(err, source){
     if(err){console.log("ERROR:", err);}
+    web3.eth.defaultAccount = deployAccount;
     var compiled = web3.eth.compile.solidity(source);
     var contractRoot = Object.keys(compiled)[0];
     var data = compiled[contractRoot].code;
     var abi = compiled[contractRoot].info.abiDefinition;
 
     web3.eth.contract(abi)
-    .new(100, {from: deployAccount, data: data, gas: 3000000, privateFor: privateFor}
+    .new(1000, 'PrivateToken', 2, 'PT',  
+    {from: deployAccount, data: data, gas: 3000000, privateFor: privateFor}
     , function (err, contract) {
       if(err) {
         console.error("ERROR:", err);
@@ -22,8 +24,8 @@ function submitContract(deployAccount, privateFor, cb){
       } else if(contract.address){  
         console.log('Contract mined, address: ' + contract.address);
         cb({
-          contractABI: abi,
-          contractAddress: contract.address
+          abi: abi,
+          address: contract.address
         });
       }
     });
@@ -31,7 +33,7 @@ function submitContract(deployAccount, privateFor, cb){
 }
 
 function getContractInstance(contractABI, contractAddress){
-  var contract_ = web3.eth.contract(contractABI);
+  var contract = web3.eth.contract(contractABI);
   var instance = contract.at(contractAddress);
   return instance;
 }

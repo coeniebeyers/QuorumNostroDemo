@@ -14,6 +14,8 @@ var nodeIdentityName = 'unset';
 var constellationNodes = {};
 var nodeNames = {};
 var deployedContract = null;
+// TODO: This needs to be sorted out, perhaps the user could be requested who they want to share the transaction with similar to how they are asked with whom to share the contract with
+var privateForList = null;
 
 function startConstellationListeners(){
   web3.shh.filter({"topics":["Constellation"]}).watch(function(err, msg) {
@@ -158,6 +160,7 @@ function deployStorageContract(cb){
   console.log('Enter a number followed by enter, enter 0 once complete: \n'); 
   var selectedNumbers = [];
   displayConstellationKeys(function(){
+    console.log('0) Done');
     console.log('---');
     getNodesToShareWith(selectedNumbers, function(){
       resolveNumbersToNodes(selectedNumbers, function(nodes){
@@ -168,30 +171,73 @@ function deployStorageContract(cb){
           console.log(node.name);
           privateFor.push(node.constellationKey);
         }
-        contracts.SubmitContract(web3.eth.accounts[0], privateFor, function(storageContract){ 
-          console.log('Contract deployed!');
-          cb(storageContract);
+        privateForList = privateFor;
+        contracts.SubmitContract(web3.eth.accounts[0], privateFor, function(newContract){ 
+          var contractInstance = contracts.GetContractInstance(
+            newContract.abi, newContract.address);
+          cb(contractInstance);
         });
       });
     });
   });
 }
 
-function constantSubMenu(cb){
+function balanceOf(deployedContract, cb){
+  prompt.get(['address'], function (err, o) {
+    deployedContract.balanceOf(o.address, function(err, balance){
+      if(err){console.log('ERROR:', err)}
+      cb(balance.toString());
+    });
+  });
+}
+
+function transfer(deployedContract, cb){
+  web3.eth.defaultAccount = web3.eth.accounts[0];
+  prompt.get(['toAddress', 'amount'], function (err, o) {
+    console.log('o', o);
+    // TODO: Note the extra privateFor!
+    deployedContract.transfer(o.toAddress, Number(o.amount), {from: web3.eth.accounts[0], gas: 30000000, privateFor: privateForList} 
+    , function(err, txHash){
+      if(err){console.log('ERROR:', err)}
+      cb(txHash);
+    });
+  });
+}
+
+// TODO: it's not hard to add multiple contracts, for now we only have one though
+function contractSubMenu(cb){
   console.log('1) Deploy private contract');
+  console.log('2) View address balance');
+  console.log('3) Transfer amount to address');
   console.log('0) Return to main menu');
   prompt.get(['option'], function (err, o) {
-    if(o.option == 1){
-      deployStorageContract(function(storageContract){
-        deployedContracts = storageContract;
-        constantSubMenu(function(res){
+    if(o && o.option == 1){
+      deployStorageContract(function(privateToken){
+        deployedContract = privateToken;
+        // TODO: let the other parties know that they are party to this contract
+        contractSubMenu(function(res){
           cb(res);
         });
       }); 
-    } else if(o.option == 0){
+    } else if(o && o.option == 2){
+      balanceOf(deployedContract, function(res){
+        console.log('Balance:', res);
+        contractSubMenu(function(res){
+          cb(res);
+        });
+      });      
+    } else if(o && o.option == 3){
+      transfer(deployedContract, function(res){
+        console.log('Tx hash:', res);
+        contractSubMenu(function(res){
+          cb(res);
+        });
+      });      
+    } else if(o && o.option == 0){
       cb();
+      return;
     } else {
-      constantSubMenu(function(res){
+      contractSubMenu(function(res){
         cb(res);
       });
     }
@@ -225,7 +271,7 @@ function menu(){
         menu();
       }); 
     } else if(o.option == 5){
-      constantSubMenu(function(res){
+      contractSubMenu(function(res){
         menu();
       });
     } else if(o.option == 0){

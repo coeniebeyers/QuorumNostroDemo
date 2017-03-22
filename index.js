@@ -4,13 +4,16 @@ var fs = require('fs');
 var Web3 = require('web3');
 var web3 = new Web3();
 web3.setProvider(new web3.providers.HttpProvider('http://localhost:20010'));
+// TODO: Add check that we are receiving valid from addresses
 var myId = web3.shh.newIdentity();
 
 var util = require('./util.js');
+var contracts = require('./smartContracts.js');
 
 var nodeIdentityName = 'unset';
 var constellationNodes = {};
 var nodeNames = {};
+var deployedContract = null;
 
 function startConstellationListeners(){
   web3.shh.filter({"topics":["Constellation"]}).watch(function(err, msg) {
@@ -158,10 +161,40 @@ function deployStorageContract(cb){
     console.log('---');
     getNodesToShareWith(selectedNumbers, function(){
       resolveNumbersToNodes(selectedNumbers, function(nodes){
-        console.log('Selected:', nodes);
-        cb();
+        var privateFor = [];  
+        console.log('Nodes included in this contract is:');
+        for(var i in nodes){
+          var node = nodes[i];
+          console.log(node.name);
+          privateFor.push(node.constellationKey);
+        }
+        contracts.SubmitContract(web3.eth.accounts[0], privateFor, function(storageContract){ 
+          console.log('Contract deployed!');
+          cb(storageContract);
+        });
       });
     });
+  });
+}
+
+function constantSubMenu(cb){
+  console.log('1) Deploy private contract');
+  console.log('0) Return to main menu');
+  prompt.get(['option'], function (err, o) {
+    if(o.option == 1){
+      deployStorageContract(function(storageContract){
+        deployedContracts = storageContract;
+        constantSubMenu(function(res){
+          cb(res);
+        });
+      }); 
+    } else if(o.option == 0){
+      cb();
+    } else {
+      constantSubMenu(function(res){
+        cb(res);
+      });
+    }
   });
 }
 
@@ -171,7 +204,7 @@ function menu(){
   console.log('2) Get other node names');
   console.log('3) Request other nodes\' constellation keys');
   console.log('4) Display known constellation keys');
-  console.log('5) Deploy private storage contract');
+  console.log('5) Contracts submenu');
   console.log('0) Quit');
   prompt.get(['option'], function (err, o) {
     if(o.option == 1){
@@ -188,12 +221,13 @@ function menu(){
       });
     } else if(o.option == 4){
       displayConstellationKeys(function(){
+        console.log('---');
         menu();
       }); 
     } else if(o.option == 5){
-      deployStorageContract(function(){
+      constantSubMenu(function(res){
         menu();
-      }); 
+      });
     } else if(o.option == 0){
       console.log('Quiting');
       return;

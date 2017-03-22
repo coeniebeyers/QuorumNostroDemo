@@ -8,7 +8,9 @@ var myId = web3.shh.newIdentity();
 
 var util = require('./util.js');
 
+var nodeName = 'unset';
 var constellationNodes = [];
+var nodeNames = {};
 
 function startWhisperListeners(){
   web3.shh.filter({"topics":["Constellation"]}).watch(function(err, msg) {
@@ -72,17 +74,34 @@ function displayConstellationKeys(cb){
   cb();
 }
 
+function setNodeName(cb){
+  promt.get(['name'], function(err, node){
+    nodeName = node.name;
+    cb();
+  });
+}
+
 prompt.start();
 function menu(){
-  console.log('1) Request other nodes\' constellation keys');
-  console.log('2) Display known constellation keys');
+  console.log('1) Set node name');
+  console.log('2) Get other node names');
+  console.log('3) Request other nodes\' constellation keys');
+  console.log('4) Display known constellation keys');
   console.log('0) Quit');
   prompt.get(['option'], function (err, o) {
     if(o.option == 1){
+      setNodeName(function(){
+        menu();
+      });       
+    } else if(o.option == 2){
+      requestOtherNodeNames(function(){
+        menu();
+      });
+    } else if(o.option == 3){
       requestConstellationKeys(function(){
         menu();
       });
-    } else if(o.option == 2){
+    } else if(o.option == 4){
       displayConstellationKeys(function(){
         menu();
       }); 

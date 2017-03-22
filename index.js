@@ -16,7 +16,6 @@ function startConstellationListeners(){
   web3.shh.filter({"topics":["Constellation"]}).watch(function(err, msg) {
     if(err){console.log("ERROR:", err);};
     var message = util.Hex2a(msg.payload);
-    console.log('Message:', message);
     if(message.indexOf('request|publicKey') >= 0){
       getThisNodesConstellationPubKey(function(publicKey){
         var message = 'response|publicKey|'+publicKey;
@@ -47,11 +46,8 @@ function startNodeNameListeners(){
   web3.shh.filter({"topics":["NodeName"]}).watch(function(err, msg) {
     if(err){console.log("ERROR:", err);};
     var message = util.Hex2a(msg.payload);
-    console.log('Node Name Message:', message);
     if(message.indexOf('request|nodeName') >= 0){
       var response = 'response|nodeName|'+nodeIdentityName;
-      console.log('nodeName:', nodeIdentityName);
-      console.log('response:', response);
       var hexString = new Buffer(response).toString('hex');
       web3.shh.post({
         "topics": ["NodeName"],

@@ -85,11 +85,12 @@ function requestConstellationKeys(cb){
 }
 
 function displayConstellationKeys(cb){
-  console.log('Known constellation keys:');
+  var i = 1;
   for(var id in constellationNodes){
     var constellationKey = constellationNodes[id];
     var name = nodeNames[id];
-    console.log(constellationKey +' | '+ name);
+    console.log(i+') '+name +' | '+ constellationKey);
+    i++;
   }
   cb();
 }
@@ -116,12 +117,61 @@ function requestNodeNames(cb){
   });
 }
 
+function getNodesToShareWith(selectedNumbers, cb){
+  prompt.get(['number'], function(err, p){
+    if(p.number == 0){
+      cb();
+    } else {
+      selectedNumbers.push(p.number);
+      getNodesToShareWith(selectedNumbers, function(res){
+        cb(res);
+      });
+    }
+  });
+}
+
+function resolveNumbersToNodes(selectedNumbers, cb){
+  var selectedNodes = [];
+  var i = 1;
+  for(var id in constellationNodes){
+    for(var j in selectedNumbers){
+      var nr = Number(selectedNumbers[j]);
+      if(nr == i) {
+        var constellationKey = constellationNodes[id];
+        var name = nodeNames[id];
+        selectedNodes.push({
+          constellationKey: constellationKey,
+          name: name
+        }); 
+      }
+    }
+    i++;
+  }
+  cb(selectedNodes);
+}
+
+function deployStorageContract(cb){
+  console.log('Select whom to include in this contract.'); 
+  console.log('Enter a number followed by enter, enter 0 once complete: \n'); 
+  var selectedNumbers = [];
+  displayConstellationKeys(function(){
+    console.log('---');
+    getNodesToShareWith(selectedNumbers, function(){
+      resolveNumbersToNodes(selectedNumbers, function(nodes){
+        console.log('Selected:', nodes);
+        cb();
+      });
+    });
+  });
+}
+
 prompt.start();
 function menu(){
   console.log('1) Set node name');
   console.log('2) Get other node names');
   console.log('3) Request other nodes\' constellation keys');
   console.log('4) Display known constellation keys');
+  console.log('5) Deploy private storage contract');
   console.log('0) Quit');
   prompt.get(['option'], function (err, o) {
     if(o.option == 1){
@@ -138,6 +188,10 @@ function menu(){
       });
     } else if(o.option == 4){
       displayConstellationKeys(function(){
+        menu();
+      }); 
+    } else if(o.option == 5){
+      deployStorageContract(function(){
         menu();
       }); 
     } else if(o.option == 0){

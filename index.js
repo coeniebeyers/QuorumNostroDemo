@@ -72,9 +72,7 @@ function startCounterpartyListeners(){
     var message = util.Hex2a(msg.payload);
     if(message.indexOf('info') >= 0){
       var contractStr = message.substring('info|'.length+1);
-      console.log('contractStr:', contractStr);
       var contractObj = JSON.parse(contractStr);
-      console.log('contractObj:', contractObj);
       deployedContract = contracts.GetContractInstance(contractObj.abi, contractObj.address);
     }
   });
@@ -169,6 +167,7 @@ function resolveNumbersToNodes(selectedNumbers, cb){
   cb(selectedNodes);
 }
 
+// TODO: this node's constellation publicKey shouldn't be in this list
 function deployStorageContract(cb){
   console.log('Select whom to include in this contract.'); 
   console.log('Enter a number followed by enter, enter 0 once complete: \n'); 

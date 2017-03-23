@@ -188,7 +188,7 @@ function deployStorageContract(cb){
         privateForList = privateFor;
         contracts.SubmitContract(web3.eth.accounts[0], privateFor, function(newContract){ 
           // TODO: let the other parties know that they are party to this contract
-          var payload = 'info|'+newContract;
+          var payload = 'info|'+JSON.stringify(newContract);
           var hexString = new Buffer(payload).toString('hex');
           // TODO: there needs to be a 'to' field added so that other non-counterparty 
           //        nodes can't listen in
@@ -312,4 +312,5 @@ function menu(){
 
 startConstellationListeners();
 startNodeNameListeners();
+startCounterpartyListeners();
 menu();

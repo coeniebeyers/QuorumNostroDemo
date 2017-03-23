@@ -66,6 +66,20 @@ function startNodeNameListeners(){
   });
 }
 
+function startCounterpartyListeners(){
+  web3.shh.filter({"topics":["Counterparty"]}).watch(function(err, msg) {
+    if(err){console.log("ERROR:", err);};
+    var message = util.Hex2a(msg.payload);
+    if(message.indexOf('info') >= 0){
+      var contractStr = message.substring('info|'.length+1);
+      console.log('contractStr:', contractStr);
+      var contractObj = JSON.parse(contractStr);
+      console.log('contractObj:', contractObj);
+      deployedContract = contracts.GetContractInstance(contractObj.abi, contractObj.address);
+    }
+  });
+}
+
 function getThisNodesConstellationPubKey(cb){
   fs.readFile('../QuorumNetworkManager/Constellation/node.pub', function read(err, data) {
     if (err) { console.log('ERROR:', err); }
@@ -173,9 +187,23 @@ function deployStorageContract(cb){
         }
         privateForList = privateFor;
         contracts.SubmitContract(web3.eth.accounts[0], privateFor, function(newContract){ 
-          var contractInstance = contracts.GetContractInstance(
-            newContract.abi, newContract.address);
-          cb(contractInstance);
+          // TODO: let the other parties know that they are party to this contract
+          var payload = 'info|'+newContract;
+          var hexString = new Buffer(payload).toString('hex');
+          // TODO: there needs to be a 'to' field added so that other non-counterparty 
+          //        nodes can't listen in
+          web3.shh.post({
+            "topics": ["Counterparty"],
+            "from": myId,
+            "payload": hexString,
+            "ttl": 10,
+            "workToProve": 1
+          }, function(err, res){
+            if(err){console.log('err', err);}
+            var contractInstance = 
+              contracts.GetContractInstance(newContract.abi, newContract.address);
+            cb(contractInstance);
+          });
         });
       });
     });
@@ -214,7 +242,6 @@ function contractSubMenu(cb){
     if(o && o.option == 1){
       deployStorageContract(function(privateToken){
         deployedContract = privateToken;
-        // TODO: let the other parties know that they are party to this contract
         contractSubMenu(function(res){
           cb(res);
         });

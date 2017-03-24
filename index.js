@@ -14,6 +14,7 @@ var nodeIdentityName = 'unset';
 var constellationNodes = {};
 var nodeNames = {};
 var contractList = [];
+var activeContractNr = 0;
 
 function startConstellationListeners(){
   web3.shh.filter({"topics":["Constellation"]}).watch(function(err, msg) {
@@ -64,6 +65,7 @@ function startNodeNameListeners(){
   });
 }
 
+// TODO: add token to message giving the contract a name
 function startCounterpartyListeners(){
   web3.shh.filter({"topics":["Counterparty"]}).watch(function(err, msg) {
     if(err){console.log("ERROR:", err);};
@@ -74,6 +76,7 @@ function startCounterpartyListeners(){
       var contractInstance = contracts.GetContractInstance(contractObj.abi, contractObj.address);
       var counterparties = JSON.parse(messageArr[2]);
       contractList.push({
+        timestamp: new Date(),
         contractInstance: contractInstance,
         counterparties: counterparties
       });
@@ -190,6 +193,7 @@ function broadcastContractToCounterparties(counterparties, contract, cb){
 }
 
 // TODO: this node's constellation publicKey shouldn't be in this list
+// TODO: housekeeping!!!
 function deployStorageContract(cb){
   console.log('Select whom to include in this contract.'); 
   console.log('Enter a number followed by enter, enter 0 once complete: \n'); 
@@ -214,11 +218,6 @@ function deployStorageContract(cb){
           getThisNodesConstellationPubKey(function(constellationKey){
             counterparties.push(constellationKey);
             broadcastContractToCounterparties(counterparties, newContract, function(){
-
-              contractList.push({
-                contractInstance: contractInstance,
-                counterparties: counterparties
-              });
               cb();
             });
           });
@@ -238,7 +237,6 @@ function balanceOf(contractInstance, cb){
 }
 
 function transfer(contractInstance, counterparties, cb){
-  console.log('counterparties:', counterparties);
   web3.eth.defaultAccount = web3.eth.accounts[0];
   prompt.get(['toAddress', 'amount'], function (err, o) {
     contractInstance.transfer(o.toAddress, Number(o.amount), {from: web3.eth.accounts[0], gas: 30000000, privateFor: counterparties} 
@@ -249,9 +247,49 @@ function transfer(contractInstance, counterparties, cb){
   });
 }
 
+// TODO: this can be cleaned up but shouldn't be a problem until we hit many nodes/counterparties
+function resolveCounterpartyNames(counterparties){
+  var counterpartyNames = [];
+  for(var i in counterparties){
+    var constellationKey = counterparties[i];
+    for(var j in constellationNodes){
+      var constellationNode = constellationNodes[j];
+      if(constellationNode == constellationKey){ // We've found the associated whisper identity
+        for(var k in nodeNames){
+          var nodeName = nodeNames[k];
+          if(j == k){ // We've found the nodeName we are looking for
+            counterpartyNames.push(nodeName);
+          }
+        }
+        break; 
+      }
+    } 
+  }
+  return counterpartyNames;
+}
+
+function displayAvailableContracts(cb){
+  for(var i in contractList){
+    var contract = contractList[i];
+    var counterpartyNames = resolveCounterpartyNames(contract.counterparties);
+    console.log(i+') '+new Date(contract.timestamp) + ' | '+ counterpartyNames);
+  }
+  cb();
+}
+
 function changeActiveContract(cb){
+  console.log('Please select a contract to make active');
   displayAvailableContracts(function(){
-    cb();
+    console.log('---');
+    prompt.get(['contractNr'], function (err, o) {
+      var selectedNr = Number(o.contractNr);
+      if(selectedNr < contractList.length){
+        activeContractNr = selectedNr;
+      } else {
+        console.log('Nr too high! Select a number below:', contractList.length);
+      }
+      cb();
+    });
   });
 }
 
@@ -260,7 +298,7 @@ function contractSubMenu(cb){
   console.log('1) Deploy private contract');
   console.log('2) View address balance');
   console.log('3) Transfer amount to address');
-  console.log('4) Change active ontract');
+  console.log('4) Change active contract');
   console.log('0) Return to main menu');
   prompt.get(['option'], function (err, o) {
     if(o && o.option == 1){
@@ -271,7 +309,7 @@ function contractSubMenu(cb){
       }); 
     } else if(o && o.option == 2){
       // Just selecting the first contract in the list for now
-      var contractInstance = contractList[0].contractInstance;
+      var contractInstance = contractList[activeContractNr].contractInstance;
       balanceOf(contractInstance, function(res){
         console.log('Balance:', res);
         contractSubMenu(function(res){
@@ -279,8 +317,8 @@ function contractSubMenu(cb){
         });
       });      
     } else if(o && o.option == 3){
-      var contractInstance = contractList[0].contractInstance;
-      var counterparties = contractList[0].counterparties;
+      var contractInstance = contractList[activeContractNr].contractInstance;
+      var counterparties = contractList[activeContractNr].counterparties;
       getThisNodesConstellationPubKey(function(constellationKey){
         while(counterparties.indexOf(constellationKey) >= 0){
           counterparties.splice(counterparties.indexOf(constellationKey));

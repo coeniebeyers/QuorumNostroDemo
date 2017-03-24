@@ -13,9 +13,7 @@ var contracts = require('./smartContracts.js');
 var nodeIdentityName = 'unset';
 var constellationNodes = {};
 var nodeNames = {};
-var deployedContract = null;
-// TODO: This needs to be sorted out, perhaps the user could be requested who they want to share the transaction with similar to how they are asked with whom to share the contract with
-var privateForList = null;
+var contractList = [];
 
 function startConstellationListeners(){
   web3.shh.filter({"topics":["Constellation"]}).watch(function(err, msg) {
@@ -71,9 +69,14 @@ function startCounterpartyListeners(){
     if(err){console.log("ERROR:", err);};
     var message = util.Hex2a(msg.payload);
     if(message.indexOf('info') >= 0){
-      var contractStr = message.substring('info|'.length+1);
-      var contractObj = JSON.parse(contractStr);
-      deployedContract = contracts.GetContractInstance(contractObj.abi, contractObj.address);
+      var messageArr = message.split('|');
+      var contractObj = JSON.parse(messageArr[1]);
+      var contractInstance = contracts.GetContractInstance(contractObj.abi, contractObj.address);
+      var counterparties = JSON.parse(messageArr[2]);
+      contractList.push({
+        contractInstance: contractInstance,
+        counterparties: counterparties
+      });
     }
   });
 }
@@ -82,7 +85,7 @@ function getThisNodesConstellationPubKey(cb){
   fs.readFile('../QuorumNetworkManager/Constellation/node.pub', function read(err, data) {
     if (err) { console.log('ERROR:', err); }
     var publicKey = new Buffer(data).toString();
-   cb(publicKey); 
+    cb(publicKey); 
   });
 }
 
@@ -167,6 +170,29 @@ function resolveNumbersToNodes(selectedNumbers, cb){
   cb(selectedNodes);
 }
 
+function broadcastContractToCounterparties(counterparties, contract, cb){
+  getThisNodesConstellationPubKey(function(constellationKey){
+    counterparties.push(constellationKey);
+
+    var payload = 'info';
+    payload += '|'+JSON.stringify(contract);
+    payload += '|'+JSON.stringify(counterparties);
+    var hexPayload = new Buffer(payload).toString('hex');
+    // TODO: there needs to be a 'to' field added so that other non-counterparty 
+    //        nodes can't listen in
+    web3.shh.post({
+      "topics": ["Counterparty"],
+      "from": myId,
+      "payload": hexPayload,
+      "ttl": 10,
+      "workToProve": 1
+    }, function(err, res){
+      if(err){console.log('err', err);}
+      cb();
+    });
+  });
+}
+
 // TODO: this node's constellation publicKey shouldn't be in this list
 function deployStorageContract(cb){
   console.log('Select whom to include in this contract.'); 
@@ -177,28 +203,16 @@ function deployStorageContract(cb){
     console.log('---');
     getNodesToShareWith(selectedNumbers, function(){
       resolveNumbersToNodes(selectedNumbers, function(nodes){
-        var privateFor = [];  
+        var counterparties = [];  
         console.log('Nodes included in this contract is:');
         for(var i in nodes){
           var node = nodes[i];
           console.log(node.name);
-          privateFor.push(node.constellationKey);
+          counterparties.push(node.constellationKey);
         }
-        privateForList = privateFor;
-        contracts.SubmitContract(web3.eth.accounts[0], privateFor, function(newContract){ 
-          // TODO: let the other parties know that they are party to this contract
-          var payload = 'info|'+JSON.stringify(newContract);
-          var hexString = new Buffer(payload).toString('hex');
-          // TODO: there needs to be a 'to' field added so that other non-counterparty 
-          //        nodes can't listen in
-          web3.shh.post({
-            "topics": ["Counterparty"],
-            "from": myId,
-            "payload": hexString,
-            "ttl": 10,
-            "workToProve": 1
-          }, function(err, res){
-            if(err){console.log('err', err);}
+        contracts.SubmitContract(web3.eth.accounts[0], counterparties, function(newContract){ 
+          // TODO: extract to function that lets counterparties know about this contract
+          broadcastContractToCounterparties(counterparties, newContract, function(){
             var contractInstance = 
               contracts.GetContractInstance(newContract.abi, newContract.address);
             cb(contractInstance);
@@ -231,11 +245,18 @@ function transfer(deployedContract, cb){
   });
 }
 
+function changeActiveContract(cb){
+  displayAvailableContracts(function(){
+    cb();
+  });
+}
+
 // TODO: it's not hard to add multiple contracts, for now we only have one though
 function contractSubMenu(cb){
   console.log('1) Deploy private contract');
   console.log('2) View address balance');
   console.log('3) Transfer amount to address');
+  console.log('4) Change active ontract');
   console.log('0) Return to main menu');
   prompt.get(['option'], function (err, o) {
     if(o && o.option == 1){
@@ -255,6 +276,12 @@ function contractSubMenu(cb){
     } else if(o && o.option == 3){
       transfer(deployedContract, function(res){
         console.log('Tx hash:', res);
+        contractSubMenu(function(res){
+          cb(res);
+        });
+      });      
+    } else if(o && o.option == 4){
+      changeActiveContract(function(res){
         contractSubMenu(function(res){
           cb(res);
         });

@@ -238,10 +238,9 @@ function balanceOf(contractInstance, cb){
 }
 
 function transfer(contractInstance, counterparties, cb){
+  console.log('counterparties:', counterparties);
   web3.eth.defaultAccount = web3.eth.accounts[0];
   prompt.get(['toAddress', 'amount'], function (err, o) {
-    console.log('o', o);
-    // TODO: Note the extra privateFor!
     contractInstance.transfer(o.toAddress, Number(o.amount), {from: web3.eth.accounts[0], gas: 30000000, privateFor: counterparties} 
     , function(err, txHash){
       if(err){console.log('ERROR:', err)}
@@ -282,12 +281,17 @@ function contractSubMenu(cb){
     } else if(o && o.option == 3){
       var contractInstance = contractList[0].contractInstance;
       var counterparties = contractList[0].counterparties;
-      transfer(contractInstance, counterparties, function(res){
-        console.log('Tx hash:', res);
-        contractSubMenu(function(res){
-          cb(res);
-        });
-      });      
+      getThisNodesConstellationPubKey(function(constellationKey){
+        while(counterparties.indexOf(constellationKey) >= 0){
+          counterparties.splice(counterparties.indexOf(constellationKey));
+        }
+        transfer(contractInstance, counterparties, function(res){
+          console.log('Tx hash:', res);
+          contractSubMenu(function(res){
+            cb(res);
+          });
+        });      
+      });
     } else if(o && o.option == 4){
       changeActiveContract(function(res){
         contractSubMenu(function(res){

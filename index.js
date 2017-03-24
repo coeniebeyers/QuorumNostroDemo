@@ -171,25 +171,21 @@ function resolveNumbersToNodes(selectedNumbers, cb){
 }
 
 function broadcastContractToCounterparties(counterparties, contract, cb){
-  getThisNodesConstellationPubKey(function(constellationKey){
-    counterparties.push(constellationKey);
-
-    var payload = 'info';
-    payload += '|'+JSON.stringify(contract);
-    payload += '|'+JSON.stringify(counterparties);
-    var hexPayload = new Buffer(payload).toString('hex');
-    // TODO: there needs to be a 'to' field added so that other non-counterparty 
-    //        nodes can't listen in
-    web3.shh.post({
-      "topics": ["Counterparty"],
-      "from": myId,
-      "payload": hexPayload,
-      "ttl": 10,
-      "workToProve": 1
-    }, function(err, res){
-      if(err){console.log('err', err);}
-      cb();
-    });
+  var payload = 'info';
+  payload += '|'+JSON.stringify(contract);
+  payload += '|'+JSON.stringify(counterparties);
+  var hexPayload = new Buffer(payload).toString('hex');
+  // TODO: there needs to be a 'to' field added so that other non-counterparty 
+  //        nodes can't listen in
+  web3.shh.post({
+    "topics": ["Counterparty"],
+    "from": myId,
+    "payload": hexPayload,
+    "ttl": 10,
+    "workToProve": 1
+  }, function(err, res){
+    if(err){console.log('err', err);}
+    cb();
   });
 }
 
@@ -211,11 +207,20 @@ function deployStorageContract(cb){
           counterparties.push(node.constellationKey);
         }
         contracts.SubmitContract(web3.eth.accounts[0], counterparties, function(newContract){ 
-          // TODO: extract to function that lets counterparties know about this contract
-          broadcastContractToCounterparties(counterparties, newContract, function(){
-            var contractInstance = 
-              contracts.GetContractInstance(newContract.abi, newContract.address);
-            cb(contractInstance);
+          var contractInstance = contracts.GetContractInstance(
+                                  newContract.abi
+                                , newContract.address);
+
+          getThisNodesConstellationPubKey(function(constellationKey){
+            counterparties.push(constellationKey);
+            broadcastContractToCounterparties(counterparties, newContract, function(){
+
+              contractList.push({
+                contractInstance: contractInstance,
+                counterparties: counterparties
+              });
+              cb();
+            });
           });
         });
       });
@@ -223,21 +228,21 @@ function deployStorageContract(cb){
   });
 }
 
-function balanceOf(deployedContract, cb){
+function balanceOf(contractInstance, cb){
   prompt.get(['address'], function (err, o) {
-    deployedContract.balanceOf(o.address, function(err, balance){
+    contractInstance.balanceOf(o.address, function(err, balance){
       if(err){console.log('ERROR:', err)}
       cb(balance.toString());
     });
   });
 }
 
-function transfer(deployedContract, cb){
+function transfer(contractInstance, counterparties, cb){
   web3.eth.defaultAccount = web3.eth.accounts[0];
   prompt.get(['toAddress', 'amount'], function (err, o) {
     console.log('o', o);
     // TODO: Note the extra privateFor!
-    deployedContract.transfer(o.toAddress, Number(o.amount), {from: web3.eth.accounts[0], gas: 30000000, privateFor: privateForList} 
+    contractInstance.transfer(o.toAddress, Number(o.amount), {from: web3.eth.accounts[0], gas: 30000000, privateFor: counterparties} 
     , function(err, txHash){
       if(err){console.log('ERROR:', err)}
       cb(txHash);
@@ -260,21 +265,24 @@ function contractSubMenu(cb){
   console.log('0) Return to main menu');
   prompt.get(['option'], function (err, o) {
     if(o && o.option == 1){
-      deployStorageContract(function(privateToken){
-        deployedContract = privateToken;
+      deployStorageContract(function(){
         contractSubMenu(function(res){
           cb(res);
         });
       }); 
     } else if(o && o.option == 2){
-      balanceOf(deployedContract, function(res){
+      // Just selecting the first contract in the list for now
+      var contractInstance = contractList[0].contractInstance;
+      balanceOf(contractInstance, function(res){
         console.log('Balance:', res);
         contractSubMenu(function(res){
           cb(res);
         });
       });      
     } else if(o && o.option == 3){
-      transfer(deployedContract, function(res){
+      var contractInstance = contractList[0].contractInstance;
+      var counterparties = contractList[0].counterparties;
+      transfer(contractInstance, counterparties, function(res){
         console.log('Tx hash:', res);
         contractSubMenu(function(res){
           cb(res);

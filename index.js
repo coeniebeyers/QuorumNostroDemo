@@ -105,17 +105,68 @@ function startCounterpartyListeners(){
   });
 }
 
+// TODO: add check for where these messages are coming from
 function startAddressBookListeners(){
   web3.shh.filter({"topics":["Addressbook"]}).watch(function(err, msg) {
     if(err){console.log("ERROR:", err);};
     var message = util.Hex2a(msg.payload);
-    if(message.indexOf('contact') >= 0){
+    if(message.indexOf('request|contacts') >= 0){
+      getThisNodesConstellationPubKey(function(constellationKey){
+        var obj = [];
+        for(var account in accountMapping){
+          obj.push({
+            address: account,
+            name: accountMapping[account],
+            constellationKey: constellationKey
+          });
+        }
+        var message = 'contacts|'+JSON.stringify(obj);
+        var hexString = new Buffer(message).toString('hex');
+        web3.shh.post({
+          "topics": ["Addressbook"],
+          "from": myId,
+          "payload": hexString,
+          "ttl": 10,
+          "workToProve": 1
+        }, function(err, res){
+          if(err){console.log('err', err);}
+        });
+      });
+    } else if(message.indexOf('contacts') >= 0){
       var messageArr = message.split('|');
-      var contact = JSON.parse(messageArr[1]);
-      contactList.push(contact);
+      var contactObj = JSON.parse(messageArr[1]);
+      for(var i in contactObj){
+        var newContact = contactObj[i];
+        var found = false;
+        for(var j in contactList){
+          var contact = contactList[i];
+          if(contact && contact.address == newContact.address){
+            found = true;
+            break; 
+          }
+        }
+        if(found == false){
+          contactList.push(newContact);
+        }
+      }
     }
   });
 }
+
+function getAccountsFromOtherNodes(){
+  var message = 'request|contacts';
+  var hexString = new Buffer(message).toString('hex');
+  web3.shh.post({
+    "topics": ["Addressbook"],
+    "from": myId,
+    "payload": hexString,
+    "ttl": 10,
+    "workToProve": 1
+  }, function(err, res){
+    if(err){console.log('err', err);}
+  });
+}
+
 function getThisNodesConstellationPubKey(cb){
   fs.readFile('../QuorumNetworkManager/Constellation/node.pub', function read(err, data) {
     if (err) { console.log('ERROR:', err); }
@@ -405,15 +456,22 @@ function listAccounts(cb){
   cb();
 }
 
-// TODO: in the future this should load from a DB
+// TODO: in the future this should load from a DB/textfile
 function loadAllNodeAccounts(){
   for(var i in web3.eth.accounts){
     accountMapping[web3.eth.accounts[i]] = defaultAccountName; 
   }
 }
 
-function listAddressBookContacts(){
-
+function listAddressBookContacts(cb){
+  console.log('Account address \t\t\t   | Constellation Key \t\t\t\t| Account name');
+  console.log('-');
+  for(var i in contactList){
+    var contact = contactList[i];
+    console.log(contact.address+' | '+contact.constellationKey+' | '+contact.name);
+  }
+  console.log('-');
+  cb();
 }
 
 function unlockAllAccounts(){
@@ -490,7 +548,7 @@ function menu(){
       });
     } else if(o.option == 4){
       displayConstellationKeys(function(){
-        console.log('---');
+        console.log('-');
         menu();
       }); 
     } else if(o.option == 5){
@@ -517,5 +575,12 @@ startConstellationListeners();
 startNodeNameListeners();
 startCounterpartyListeners();
 startAddressBookListeners();
+getAccountsFromOtherNodes();
 
-menu();
+setInterval(function(){
+  getAccountsFromOtherNodes();
+}, 5*1000);
+
+setTimeout(function(){
+  menu();
+}, 1000);

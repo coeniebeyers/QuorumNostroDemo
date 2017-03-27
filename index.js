@@ -1,6 +1,4 @@
 var prompt = require('prompt');
-var fs = require('fs');
-var async = require('async');
 
 var Web3 = require('web3');
 var web3 = new Web3();
@@ -21,6 +19,10 @@ var myId = web3.shh.newIdentity();
 
 var util = require('./util.js');
 var contracts = require('./smartContracts.js');
+var addressBook = require('./addressBook.js');
+addressBook.SetWeb3(web3);
+addressBook.SetWeb3IPC(web3IPC);
+addressBook.SetWhisperId(myId);
 
 var unlockDuration = 999999;
 var defaultPassword = '';
@@ -32,8 +34,6 @@ var constellationNodes = {};
 var nodeNames = {};
 var contractList = [];
 var activeContractNr = 0;
-var contactList = [];
-var accountMapping = {};
 
 prompt.start();
 
@@ -42,7 +42,7 @@ function startConstellationListeners(){
     if(err){console.log("ERROR:", err);};
     var message = util.Hex2a(msg.payload);
     if(message.indexOf('request|publicKey') >= 0){
-      getThisNodesConstellationPubKey(function(publicKey){
+      util.GetThisNodesConstellationPubKey(function(publicKey){
         var message = 'response|publicKey|'+publicKey;
         var hexString = new Buffer(message).toString('hex');
         web3.shh.post({
@@ -105,75 +105,6 @@ function startCounterpartyListeners(){
   });
 }
 
-// TODO: add check for where these messages are coming from
-function startAddressBookListeners(){
-  web3.shh.filter({"topics":["Addressbook"]}).watch(function(err, msg) {
-    if(err){console.log("ERROR:", err);};
-    var message = util.Hex2a(msg.payload);
-    if(message.indexOf('request|contacts') >= 0){
-      getThisNodesConstellationPubKey(function(constellationKey){
-        var obj = [];
-        for(var account in accountMapping){
-          obj.push({
-            address: account,
-            name: accountMapping[account],
-            constellationKey: constellationKey
-          });
-        }
-        var message = 'contacts|'+JSON.stringify(obj);
-        var hexString = new Buffer(message).toString('hex');
-        web3.shh.post({
-          "topics": ["Addressbook"],
-          "from": myId,
-          "payload": hexString,
-          "ttl": 10,
-          "workToProve": 1
-        }, function(err, res){
-          if(err){console.log('err', err);}
-        });
-      });
-    } else if(message.indexOf('contacts') >= 0){
-      var messageArr = message.split('|');
-      var contactObj = JSON.parse(messageArr[1]);
-      for(var i in contactObj){
-        var newContact = contactObj[i];
-        var found = false;
-        for(var j in contactList){
-          var contact = contactList[j];
-          if(contact && contact.address == newContact.address){
-            found = true;
-            break; 
-          }
-        }
-        if(found == false){
-          contactList.push(newContact);
-        } 
-      }
-    }
-  });
-}
-
-function getAccountsFromOtherNodes(){
-  var message = 'request|contacts';
-  var hexString = new Buffer(message).toString('hex');
-  web3.shh.post({
-    "topics": ["Addressbook"],
-    "from": myId,
-    "payload": hexString,
-    "ttl": 10,
-    "workToProve": 1
-  }, function(err, res){
-    if(err){console.log('err', err);}
-  });
-}
-
-function getThisNodesConstellationPubKey(cb){
-  fs.readFile('../QuorumNetworkManager/Constellation/node.pub', function read(err, data) {
-    if (err) { console.log('ERROR:', err); }
-    var publicKey = new Buffer(data).toString();
-    cb(publicKey); 
-  });
-}
 
 function requestConstellationKeys(cb){
   var message = 'request|publicKey';
@@ -275,7 +206,6 @@ function broadcastContractToCounterparties(counterparties, contract, cb){
   });
 }
 
-// TODO: this node's constellation publicKey shouldn't be in this list
 // TODO: housekeeping!!!
 function deployStorageContract(cb){
   console.log('Select whom to include in this contract.'); 
@@ -298,7 +228,7 @@ function deployStorageContract(cb){
                                   newContract.abi
                                 , newContract.address);
 
-          getThisNodesConstellationPubKey(function(constellationKey){
+          util.GetThisNodesConstellationPubKey(function(constellationKey){
             counterparties.push(constellationKey);
             broadcastContractToCounterparties(counterparties, newContract, function(){
               cb();
@@ -403,7 +333,7 @@ function contractSubMenu(cb){
       var contractInstance = contractList[activeContractNr].contractInstance;
       var counterparties = contractList[activeContractNr].counterparties;
       console.log('counterparties:', counterparties);
-      getThisNodesConstellationPubKey(function(constellationKey){
+      util.GetThisNodesConstellationPubKey(function(constellationKey){
         while(counterparties.indexOf(constellationKey) >= 0){
           counterparties.splice(counterparties.indexOf(constellationKey), 1);
         }
@@ -421,102 +351,6 @@ function contractSubMenu(cb){
           cb(res);
         });
       });      
-    } else if(o && o.option == 0){
-      cb();
-      return;
-    } else {
-      contractSubMenu(function(res){
-        cb(res);
-      });
-    }
-  });
-}
-
-function createNewAccount(cb){
-  prompt.get(['accountName'], function(err, o){
-    web3IPC.personal.newAccount(defaultPassword, function(err, account){
-      if(err){console.log('ERROR:', err)}
-      accountMapping[account] = o.accountName;
-      web3IPC.personal.unlockAccount(account, defaultPassword, unlockDuration, function(err, res){
-        if(err){console.log('ERROR:', err)}
-        cb({
-          accountAddress: account,
-          accountName: o.accountName
-        });
-      });
-    });
-  });
-}
-
-// TODO: add option to add a label/alias to an account
-function listAccounts(cb){
-  console.log('Account address                            | Account name');
-  console.log('-------------------------------------------|----------------');
-  for(var accountAddress in accountMapping){
-    var accountName = accountMapping[accountAddress];
-    console.log(accountAddress+' | '+accountName);
-  }
-  console.log('-------------------------------------------|----------------');
-  cb();
-}
-
-// TODO: in the future this should load from a DB/textfile
-function loadAllNodeAccounts(){
-  for(var i in web3.eth.accounts){
-    accountMapping[web3.eth.accounts[i]] = defaultAccountName; 
-  }
-}
-
-function listAddressBookContacts(cb){
-  console.log('Account address \t\t\t   | Constellation Key \t\t\t\t| Account name');
-  console.log('-');
-  for(var i in contactList){
-    var contact = contactList[i];
-    console.log(contact.address+' | '+contact.constellationKey+' | '+contact.name);
-  }
-  console.log('-');
-  cb();
-}
-
-function unlockAllAccounts(){
-  console.log('[INFO] Unlocking all accounts ...');
-  async.each(web3.eth.accounts, function(account, callback){
-    web3IPC.personal.unlockAccount(account, defaultPassword, unlockDuration, function(err, res){
-      callback(err, res);
-    });
-  }, function(err){
-    if(err){
-      console.log('ERROR:', err);
-    } else {
-      console.log('[INFO] All accounts unlocked');
-    }
-  }); 
-}
-
-function addressBookSubMenu(cb){
-  console.log('1) Create new account');
-  console.log('2) List accounts');
-  console.log('3) List contacts in addressbook');
-  console.log('0) Return to main menu');
-  prompt.get(['option'], function (err, o) {
-    if(o && o.option == 1){
-      createNewAccount(function(){
-        addressBookSubMenu(function(res){
-          cb(res);
-        });
-      }); 
-    } else if(o && o.option == 2){
-      listAccounts(function(){
-        addressBookSubMenu(function(res){
-          cb(res);
-        });
-      }); 
-    } else if(o && o.option == 3){
-      listAddressBookContacts(function(){
-        addressBookSubMenu(function(res){
-          cb(res);
-        });
-      }); 
     } else if(o && o.option == 0){
       cb();
       return;
@@ -560,7 +394,7 @@ function menu(){
         menu();
       });
     } else if(o.option == 6){
-      addressBookSubMenu(function(res){
+      addressBook.SubMenu(function(res){
         menu();
       });
     } else if(o.option == 0){
@@ -573,16 +407,17 @@ function menu(){
   });
 }
 
-unlockAllAccounts();
-loadAllNodeAccounts();
 startConstellationListeners();
 startNodeNameListeners();
 startCounterpartyListeners();
-startAddressBookListeners();
-getAccountsFromOtherNodes();
+
+addressBook.UnlockAllAccounts();
+addressBook.LoadAllNodeAccounts();
+addressBook.StartListeners();
+addressBook.GetAccountsFromOtherNodes();
 
 setInterval(function(){
-  getAccountsFromOtherNodes();
+  addressBook.GetAccountsFromOtherNodes();
 }, 5*1000);
 
 setTimeout(function(){

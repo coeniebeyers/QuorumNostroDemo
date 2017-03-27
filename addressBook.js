@@ -88,41 +88,6 @@ function getAccountsFromOtherNodes(){
   });
 }
 
-function addressBookSubMenu(cb){
-  console.log('1) Create new account');
-  console.log('2) List accounts');
-  console.log('3) List contacts in address book');
-  console.log('0) Return to main menu');
-  prompt.get(['option'], function (err, o) {
-    if(o && o.option == 1){
-      createNewAccount(function(){
-        addressBookSubMenu(function(res){
-          cb(res);
-        });
-      }); 
-    } else if(o && o.option == 2){
-      listAccounts(function(){
-        addressBookSubMenu(function(res){
-          cb(res);
-        });
-      }); 
-    } else if(o && o.option == 3){
-      listAddressBookContacts(function(){
-        addressBookSubMenu(function(res){
-          cb(res);
-        });
-      }); 
-    } else if(o && o.option == 0){
-      cb();
-      return;
-    } else {
-      contractSubMenu(function(res){
-        cb(res);
-      });
-    }
-  });
-}
-
 function createNewAccount(cb){
   prompt.get(['accountName'], function(err, o){
     web3IPC.personal.newAccount(defaultPassword, function(err, account){
@@ -182,6 +147,41 @@ function unlockAllAccounts(){
       console.log('[INFO] All accounts unlocked');
     }
   }); 
+}
+
+function addressBookSubMenu(cb){
+  console.log('1) Create new account');
+  console.log('2) List accounts');
+  console.log('3) List contacts in address book');
+  console.log('0) Return to main menu');
+  prompt.get(['option'], function (err, o) {
+    if(o && o.option == 1){
+      createNewAccount(function(){
+        addressBookSubMenu(function(res){
+          cb(res);
+        });
+      }); 
+    } else if(o && o.option == 2){
+      listAccounts(function(){
+        addressBookSubMenu(function(res){
+          cb(res);
+        });
+      }); 
+    } else if(o && o.option == 3){
+      listAddressBookContacts(function(){
+        addressBookSubMenu(function(res){
+          cb(res);
+        });
+      }); 
+    } else if(o && o.option == 0){
+      cb();
+      return;
+    } else {
+      contractSubMenu(function(res){
+        cb(res);
+      });
+    }
+  });
 }
 
 exports.SubMenu = addressBookSubMenu;

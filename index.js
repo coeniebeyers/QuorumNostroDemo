@@ -139,7 +139,7 @@ function startAddressBookListeners(){
         var newContact = contactObj[i];
         var found = false;
         for(var j in contactList){
-          var contact = contactList[i];
+          var contact = contactList[j];
           if(contact && contact.address == newContact.address){
             found = true;
             break; 
@@ -147,7 +147,7 @@ function startAddressBookListeners(){
         }
         if(found == false){
           contactList.push(newContact);
-        }
+        } 
       }
     }
   });
@@ -322,7 +322,12 @@ function balanceOf(contractInstance, cb){
 function transfer(contractInstance, counterparties, cb){
   web3.eth.defaultAccount = web3.eth.accounts[0];
   prompt.get(['toAddress', 'amount'], function (err, o) {
-    contractInstance.transfer(o.toAddress, Number(o.amount), {from: web3.eth.accounts[0], gas: 30000000, privateFor: counterparties} 
+    var code = contractInstance.code;    
+    var callData = contractInstance.transfer.getData(o.toAddress, Number(o.amount));
+    var gas = web3.eth.estimateGas({data: callData});
+    console.log('estimated gas:', gas);
+
+    contractInstance.transfer(o.toAddress, Number(o.amount), {from: web3.eth.accounts[0], gas: gas, privateFor: counterparties} 
     , function(err, txHash){
       if(err){console.log('ERROR:', err)}
       cb(txHash);
@@ -583,4 +588,4 @@ setInterval(function(){
 
 setTimeout(function(){
   menu();
-}, 1000);
+}, 2000);

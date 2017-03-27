@@ -22,13 +22,18 @@ var myId = web3.shh.newIdentity();
 var util = require('./util.js');
 var contracts = require('./smartContracts.js');
 
+var unlockDuration = 999999;
+var defaultPassword = '';
 var nodeIdentityName = 'unset';
+var defaultAccountName = 'unset';
+// TODO: rename object collections to mappings
 var constellationNodes = {};
+// TODO: rename object collections to mappings
 var nodeNames = {};
 var contractList = [];
 var activeContractNr = 0;
 var contactList = [];
-var accountList = [];
+var accountMapping = {};
 
 prompt.start();
 
@@ -372,13 +377,39 @@ function contractSubMenu(cb){
   });
 }
 
-function createNewAccount(){
-
+function createNewAccount(cb){
+  prompt.get(['accountName'], function(err, o){
+    web3IPC.personal.newAccount(defaultPassword, function(err, account){
+      if(err){console.log('ERROR:', err)}
+      accountMapping[account] = o.accountName;
+      web3IPC.personal.unlockAccount(account, defaultPassword, unlockDuration, function(err, res){
+        if(err){console.log('ERROR:', err)}
+        cb({
+          accountAddress: account,
+          accountName: o.accountName
+        });
+      });
+    });
+  });
 }
 
 // TODO: add option to add a label/alias to an account
-function listAccounts(){
+function listAccounts(cb){
+  console.log('Account address                            | Account name');
+  console.log('-------------------------------------------|----------------');
+  for(var accountAddress in accountMapping){
+    var accountName = accountMapping[accountAddress];
+    console.log(accountAddress+' | '+accountName);
+  }
+  console.log('-------------------------------------------|----------------');
+  cb();
+}
 
+// TODO: in the future this should load from a DB
+function loadAllNodeAccounts(){
+  for(var i in web3.eth.accounts){
+    accountMapping[web3.eth.accounts[i]] = defaultAccountName; 
+  }
 }
 
 function listAddressBookContacts(){
@@ -386,9 +417,9 @@ function listAddressBookContacts(){
 }
 
 function unlockAllAccounts(){
-  console.log('[INFO] Unlocking all accounts...');
+  console.log('[INFO] Unlocking all accounts ...');
   async.each(web3.eth.accounts, function(account, callback){
-    web3IPC.personal.unlockAccount(account, '', 999999, function(err, res){
+    web3IPC.personal.unlockAccount(account, defaultPassword, unlockDuration, function(err, res){
       callback(err, res);
     });
   }, function(err){
@@ -481,6 +512,7 @@ function menu(){
 }
 
 unlockAllAccounts();
+loadAllNodeAccounts();
 startConstellationListeners();
 startNodeNameListeners();
 startCounterpartyListeners();

@@ -402,10 +402,12 @@ function contractSubMenu(cb){
     } else if(o && o.option == 3){
       var contractInstance = contractList[activeContractNr].contractInstance;
       var counterparties = contractList[activeContractNr].counterparties;
+      console.log('counterparties:', counterparties);
       getThisNodesConstellationPubKey(function(constellationKey){
         while(counterparties.indexOf(constellationKey) >= 0){
-          counterparties.splice(counterparties.indexOf(constellationKey));
+          counterparties.splice(counterparties.indexOf(constellationKey), 1);
         }
+        console.log('counterparties:', counterparties);
         transfer(contractInstance, counterparties, function(res){
           console.log('Tx hash:', res);
           contractSubMenu(function(res){

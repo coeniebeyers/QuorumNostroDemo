@@ -322,11 +322,8 @@ function balanceOf(contractInstance, cb){
 function transfer(contractInstance, counterparties, cb){
   web3.eth.defaultAccount = web3.eth.accounts[0];
   prompt.get(['toAddress', 'amount'], function (err, o) {
-    var code = contractInstance.code;    
     var callData = contractInstance.transfer.getData(o.toAddress, Number(o.amount));
     var gas = web3.eth.estimateGas({data: callData});
-    console.log('estimated gas:', gas);
-
     contractInstance.transfer(o.toAddress, Number(o.amount), {from: web3.eth.accounts[0], gas: gas, privateFor: counterparties} 
     , function(err, txHash){
       if(err){console.log('ERROR:', err)}

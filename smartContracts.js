@@ -14,9 +14,11 @@ function submitContract(deployAccount, privateFor, cb){
     var data = compiled[contractRoot].code;
     var abi = compiled[contractRoot].info.abiDefinition;
 
+    var gas = web3.eth.estimateGas({data: data});
+
     web3.eth.contract(abi)
     .new(1000, 'PrivateToken', 2, 'PT',  
-    {from: deployAccount, data: data, gas: 3000000, privateFor: privateFor}
+    {from: deployAccount, data: data, gas: gas+300000, privateFor: privateFor}
     , function (err, contract) {
       if(err) {
         console.error("ERROR:", err);

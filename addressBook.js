@@ -3,6 +3,9 @@ var async = require('async');
 
 var util = require('./util.js');
 
+var unlockDuration = 999999;
+var defaultPassword = '';
+var defaultAccountName = 'unset';
 var web3 = null;
 var web3IPC = null;
 var contactList = [];

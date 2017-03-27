@@ -24,10 +24,7 @@ addressBook.SetWeb3(web3);
 addressBook.SetWeb3IPC(web3IPC);
 addressBook.SetWhisperId(myId);
 
-var unlockDuration = 999999;
-var defaultPassword = '';
 var nodeIdentityName = 'unset';
-var defaultAccountName = 'unset';
 // TODO: rename object collections to mappings
 var constellationNodes = {};
 // TODO: rename object collections to mappings

@@ -25,7 +25,8 @@ function submitContract(deployAccount, privateFor, cb){
         console.log('Contract mined, address: ' + contract.address);
         cb({
           abi: abi,
-          address: contract.address
+          address: contract.address,
+          code: data
         });
       }
     });

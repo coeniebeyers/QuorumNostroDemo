@@ -127,7 +127,7 @@ function createNewAccount(cb){
   prompt.get(['accountName'], function(err, o){
     web3IPC.personal.newAccount(defaultPassword, function(err, account){
       if(err){console.log('ERROR:', err)}
-      addressBook.accountMapping[account] = o.accountName;
+      accountMapping[account] = o.accountName;
       web3IPC.personal.unlockAccount(account, defaultPassword, unlockDuration, function(err, res){
         if(err){console.log('ERROR:', err)}
         cb({

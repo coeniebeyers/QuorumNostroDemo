@@ -279,7 +279,7 @@ function broadcastContractToCounterparties(counterparties, contract, cb){
 // TODO: housekeeping!!!
 function deployStorageContract(cb){
   console.log('Select whom to include in this contract.'); 
-  console.log('Enter a number followed by enter, enter 0 once complete: \n'); 
+  console.log('Enter a number followed by enter. Select done when complete\n'); 
   var selectedNumbers = [];
   displayConstellationKeys(function(){
     console.log('0) Done');

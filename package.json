@@ -17,7 +17,9 @@
   },
   "homepage": "https://github.com/coeniebeyers/QuorumNostroDemo#readme",
   "dependencies": {
+    "async": "^2.2.0",
     "prompt": "^1.0.0",
-    "web3": "^0.18.2"
+    "web3": "^0.18.2",
+    "web3_ipc": "^1.4.0"
   }
 }

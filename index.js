@@ -1,9 +1,21 @@
 var prompt = require('prompt');
 var fs = require('fs');
+var async = require('async');
 
 var Web3 = require('web3');
 var web3 = new Web3();
 web3.setProvider(new web3.providers.HttpProvider('http://localhost:20010'));
+
+var Web3IPC = require('web3_ipc');
+var options = {
+  host: '../QuorumNetworkManager/Blockchain/geth.ipc',
+  ipc: true,
+  personal: true,
+  admin: true,
+  debug: false
+};
+var web3IPC = Web3IPC.create(options);
+
 // TODO: Add check that we are receiving valid from addresses
 var myId = web3.shh.newIdentity();
 
@@ -15,6 +27,10 @@ var constellationNodes = {};
 var nodeNames = {};
 var contractList = [];
 var activeContractNr = 0;
+var contactList = [];
+var accountList = [];
+
+prompt.start();
 
 function startConstellationListeners(){
   web3.shh.filter({"topics":["Constellation"]}).watch(function(err, msg) {
@@ -84,6 +100,17 @@ function startCounterpartyListeners(){
   });
 }
 
+function startAddressBookListeners(){
+  web3.shh.filter({"topics":["Addressbook"]}).watch(function(err, msg) {
+    if(err){console.log("ERROR:", err);};
+    var message = util.Hex2a(msg.payload);
+    if(message.indexOf('contact') >= 0){
+      var messageArr = message.split('|');
+      var contact = JSON.parse(messageArr[1]);
+      contactList.push(contact);
+    }
+  });
+}
 function getThisNodesConstellationPubKey(cb){
   fs.readFile('../QuorumNetworkManager/Constellation/node.pub', function read(err, data) {
     if (err) { console.log('ERROR:', err); }
@@ -293,7 +320,6 @@ function changeActiveContract(cb){
   });
 }
 
-// TODO: it's not hard to add multiple contracts, for now we only have one though
 function contractSubMenu(cb){
   console.log('1) Deploy private contract');
   console.log('2) View address balance');
@@ -308,7 +334,6 @@ function contractSubMenu(cb){
         });
       }); 
     } else if(o && o.option == 2){
-      // Just selecting the first contract in the list for now
       var contractInstance = contractList[activeContractNr].contractInstance;
       balanceOf(contractInstance, function(res){
         console.log('Balance:', res);
@@ -347,13 +372,77 @@ function contractSubMenu(cb){
   });
 }
 
-prompt.start();
+function createNewAccount(){
+
+}
+
+// TODO: add option to add a label/alias to an account
+function listAccounts(){
+
+}
+
+function listAddressBookContacts(){
+
+}
+
+function unlockAllAccounts(){
+  console.log('[INFO] Unlocking all accounts...');
+  async.each(web3.eth.accounts, function(account, callback){
+    web3IPC.personal.unlockAccount(account, '', 999999, function(err, res){
+      callback(err, res);
+    });
+  }, function(err){
+    if(err){
+      console.log('ERROR:', err);
+    } else {
+      console.log('[INFO] All accounts unlocked');
+    }
+  }); 
+}
+
+function addressBookSubMenu(cb){
+  console.log('1) Create new account');
+  console.log('2) List accounts');
+  console.log('3) List contacts in addressbook');
+  console.log('0) Return to main menu');
+  prompt.get(['option'], function (err, o) {
+    if(o && o.option == 1){
+      createNewAccount(function(){
+        addressBookSubMenu(function(res){
+          cb(res);
+        });
+      }); 
+    } else if(o && o.option == 2){
+      listAccounts(function(){
+        addressBookSubMenu(function(res){
+          cb(res);
+        });
+      }); 
+    } else if(o && o.option == 3){
+      listAddressBookContacts(function(){
+        addressBookSubMenu(function(res){
+          cb(res);
+        });
+      }); 
+    } else if(o && o.option == 0){
+      cb();
+      return;
+    } else {
+      contractSubMenu(function(res){
+        cb(res);
+      });
+    }
+  });
+}
+
+// TODO: only display this menu once the accounts have been unlocked
 function menu(){
   console.log('1) Set node name');
   console.log('2) Get other node names');
   console.log('3) Request other nodes\' constellation keys');
   console.log('4) Display known constellation keys');
   console.log('5) Contracts submenu');
+  console.log('6) Address book submenu');
   console.log('0) Quit');
   prompt.get(['option'], function (err, o) {
     if(o.option == 1){
@@ -377,8 +466,13 @@ function menu(){
       contractSubMenu(function(res){
         menu();
       });
+    } else if(o.option == 6){
+      addressBookSubMenu(function(res){
+        menu();
+      });
     } else if(o.option == 0){
       console.log('Quiting');
+      process.exit(0);
       return;
     } else {
       menu();
@@ -386,7 +480,10 @@ function menu(){
   });
 }
 
+unlockAllAccounts();
 startConstellationListeners();
 startNodeNameListeners();
 startCounterpartyListeners();
+startAddressBookListeners();
+
 menu();

@@ -103,7 +103,7 @@ function startCounterpartyListeners(){
 }
 
 
-function requestConstellationKeys(cb){
+function requestConstellationKeys(){
   var message = 'request|publicKey';
   var hexString = new Buffer(message).toString('hex');
   web3.shh.post({
@@ -114,7 +114,6 @@ function requestConstellationKeys(cb){
     "workToProve": 1
   }, function(err, res){
     if(err){console.log('err', err);}
-    cb();
   });
 }
 
@@ -136,7 +135,7 @@ function setNodeName(cb){
   });
 }
 
-function requestNodeNames(cb){
+function requestNodeNames(){
   var message = 'request|nodeName';
   var hexString = new Buffer(message).toString('hex');
   web3.shh.post({
@@ -147,7 +146,6 @@ function requestNodeNames(cb){
     "workToProve": 1
   }, function(err, res){
     if(err){console.log('err', err);}
-    cb();
   });
 }
 
@@ -362,11 +360,9 @@ function contractSubMenu(cb){
 // TODO: only display this menu once the accounts have been unlocked
 function menu(){
   console.log('1) Set node name');
-  console.log('2) Get other node names');
-  console.log('3) Request other nodes\' constellation keys');
-  console.log('4) Display known constellation keys');
-  console.log('5) Contracts submenu');
-  console.log('6) Address book submenu');
+  console.log('2) Display known constellation nodes');
+  console.log('3) Contracts submenu');
+  console.log('4) Address book submenu');
   console.log('0) Quit');
   prompt.get(['option'], function (err, o) {
     if(o.option == 1){
@@ -374,23 +370,15 @@ function menu(){
         menu();
       });       
     } else if(o.option == 2){
-      requestNodeNames(function(){
-        menu();
-      });
-    } else if(o.option == 3){
-      requestConstellationKeys(function(){
-        menu();
-      });
-    } else if(o.option == 4){
       displayConstellationKeys(function(){
         console.log('-');
         menu();
       }); 
-    } else if(o.option == 5){
+    } else if(o.option == 3){
       contractSubMenu(function(res){
         menu();
       });
-    } else if(o.option == 6){
+    } else if(o.option == 4){
       addressBook.SubMenu(function(res){
         menu();
       });
@@ -407,6 +395,8 @@ function menu(){
 startConstellationListeners();
 startNodeNameListeners();
 startCounterpartyListeners();
+requestNodeNames();
+requestConstellationKeys();
 
 addressBook.UnlockAllAccounts();
 addressBook.LoadAllNodeAccounts();
@@ -415,6 +405,8 @@ addressBook.GetAccountsFromOtherNodes();
 
 setInterval(function(){
   addressBook.GetAccountsFromOtherNodes();
+  requestNodeNames();
+  requestConstellationKeys();
 }, 5*1000);
 
 setTimeout(function(){

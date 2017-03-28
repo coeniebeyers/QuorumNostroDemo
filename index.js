@@ -376,28 +376,35 @@ function contractSubMenu(cb){
         });
       });      
     } else if(o && o.option == 6){
-      var contractInstance = contractList[activeContractNr].contractInstance;
-      var counterparties = contractList[activeContractNr].counterparties;
-      util.GetThisNodesConstellationPubKey(function(constellationKey){
-        while(counterparties.indexOf(constellationKey) >= 0){
-          counterparties.splice(counterparties.indexOf(constellationKey), 1);
-        }
-        web3.eth.defaultAccount = web3.eth.accounts[0];
-        var callData = contractInstance.transfer.getData(o.toAddress, Number(o.amount));
-        var gas = web3.eth.estimateGas({data: callData});
-        contractInstance.fetchUSDZARRate(usdzarContract.address
-        , {from: web3.eth.accounts[0], gas: gas, privateFor: counterparties} 
-        , function(err, txHash){
-          if(err){console.log('ERROR:', err)}
-          contractInstance.lastUSDZARRate(function(err, usdzarRate){
+      if(usdzarContract != null){
+        var contractInstance = contractList[activeContractNr].contractInstance;
+        var counterparties = contractList[activeContractNr].counterparties;
+        util.GetThisNodesConstellationPubKey(function(constellationKey){
+          while(counterparties.indexOf(constellationKey) >= 0){
+            counterparties.splice(counterparties.indexOf(constellationKey), 1);
+          }
+          web3.eth.defaultAccount = web3.eth.accounts[0];
+          var callData = contractInstance.transfer.getData(o.toAddress, Number(o.amount));
+          var gas = web3.eth.estimateGas({data: callData});
+          contractInstance.fetchUSDZARRate(usdzarContract.address
+          , {from: web3.eth.accounts[0], gas: gas, privateFor: counterparties} 
+          , function(err, txHash){
             if(err){console.log('ERROR:', err)}
-            console.log('usdzarRate:', usdzarRate);
-            contractSubMenu(function(res){
-              cb(res);
+            contractInstance.lastUSDZARRate(function(err, usdzarRate){
+              if(err){console.log('ERROR:', err)}
+              console.log('usdzarRate:', usdzarRate);
+              contractSubMenu(function(res){
+                cb(res);
+              });
             });
           });
         });
-      });
+      } else {
+        console.log('\nERROR: First deploy the USDZAR contract\n');
+        contractSubMenu(function(res){
+          cb(res);
+        });
+      }
     } else if(o && o.option == 0){
       cb();
       return;

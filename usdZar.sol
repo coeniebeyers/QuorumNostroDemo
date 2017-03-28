@@ -15,14 +15,16 @@ contract USDZAR {
     uint256 rate;
   }
 
-  mapping(address => Approval) approvals;
+  mapping (address => Approval) public approvals;
 
   event ApprovedExchange(
       address indexed approver
     , address indexed tokenContract_
     , uint256 indexed value
-    , uint256 rate
   );
+
+  event LogAddress(address indexed address_);
+  event LogValue(uint256 indexed value_);
 
   function USDZAR(uint256 rate_) {
     rate = rate_;
@@ -39,14 +41,18 @@ contract USDZAR {
       rate: rate
     });
     approvals[requester] = newApproval;
-    ApprovedExchange(msg.sender, tokenContract_, value, rate);
+    ApprovedExchange(msg.sender, tokenContract_, value);
     return true;
   }
 
   function receiveApproval(address requester, uint256 value, address tokenContract_, bytes extraData)
     returns (bool success) {
     //TODO: first check both balances 
-    var approval = approvals[requester];
+    Approval approval = approvals[requester];
+    LogAddress(approval.approver);
+    LogAddress(approval.tokenContract_);
+    LogValue(approval.value);
+    LogValue(approval.rate);
     //TODO: check that approval hasn't expired yet
     //TODO: check rate against value approved for
     tokenContract token1 = tokenContract(approval.tokenContract_);
@@ -54,7 +60,7 @@ contract USDZAR {
     //TODO: add checks for success
     token1.transferFrom(requester, approval.approver, value);
     token2.transferFrom(approval.approver, requester, approval.value);
-
+    Log(2);
     return true;
   }
 

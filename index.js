@@ -384,6 +384,11 @@ function deployUSDZARContract(cb){
 
       broadcastContractToCounterparties(counterparties, newContract, function(){
         usdzarContract = newContract;
+        web3.eth.filter({fromBlock:0, toBlock: 'latest', address: usdzarContract.address}).watch(
+          function(err, result) {
+          if(err){console.log('ERROR:', err);} 
+          console.log('USDZAR Contract:', result);
+        });
         cb();
       });
     });
@@ -422,7 +427,7 @@ function requestNostroTopUp(cb){
             counterparties.splice(counterparties.indexOf(constellationKey), 1);
           }
           var callData = 
-            contractInstance.approveAndCall.getData(usdzarContract.address, token1Amount, null);
+            contractInstance.approveAndCall.getData(usdzarContract.address, token1Amount, '');
           var gas = web3.eth.estimateGas({data: callData});
           setTimeout(function(){
             console.log('calling approve and call:');
@@ -430,7 +435,8 @@ function requestNostroTopUp(cb){
             console.log('usdzarContract.address:', usdzarContract.address);
             console.log('token1Amount:', token1Amount);
             console.log('approver:', web3.eth.accounts[0]);
-            contractInstance.approveAndCall(usdzarContract.address, token1Amount, null
+            console.log('counterparties:', counterparties);
+            contractInstance.approveAndCall(usdzarContract.address, token1Amount, ''
             , {from: web3.eth.accounts[0], gas: gas+3000000, privateFor: counterparties} 
             , function(err, txHash){
               if(err){console.log('ERROR:', err)}
@@ -460,6 +466,22 @@ function viewAllowances(cb){
   });
 }
 
+function viewUSDZARApproval(cb){
+  prompt.get(["approvalNumber"], function(err, o){
+    var usdzarContractInstance = contracts.GetContractInstance(
+                            usdzarContract.abi
+                          , usdzarContract.address);
+    usdzarContractInstance.approvals(Number(o.approvalNumber), function(err, result){
+      if(err){console.log('ERROR:', err)}
+      console.log('Approvals:', result);
+
+      contractSubMenu(function(res){
+        cb(res);
+      });
+    });
+  });
+}
+
 function contractSubMenu(cb){
   console.log('1) Deploy currency contract');
   console.log('2) Deploy USDZAR contract');
@@ -468,6 +490,7 @@ function contractSubMenu(cb){
   console.log('5) Change active contract');
   console.log('6) Request Nostro topup');
   console.log('7) View allowance');
+  console.log('8) View USDZAR approval');
   console.log('0) Return to main menu');
   prompt.get(['option'], function (err, o) {
     if(o && o.option == 1){
@@ -529,6 +552,19 @@ function contractSubMenu(cb){
           cb(res);
         });
       });
+    } else if(o && o.option == 8){
+      if(usdzarContract != null){
+        viewUSDZARApproval(function(res){
+          contractSubMenu(function(res){
+            cb(res);
+          });
+        });
+      } else {
+        console.log('\nERROR: First deploy the USDZAR contract\n');
+        contractSubMenu(function(res){
+          cb(res);
+        });
+      }
     } else if(o && o.option == 0){
       cb();
       return;

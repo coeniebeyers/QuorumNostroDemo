@@ -46,7 +46,7 @@ function startNostroAccountManagementListeners(){
       var requesterAddress = messageArr[3];
       var tokenAddress = messageArr[4];
       // Respond with which vostro account should be credited 
-      var message = 'response|topics|'+web3.eth.accounts[0];
+      var message = 'response|topup|'+web3.eth.accounts[0];
       var hexString = new Buffer(message).toString('hex');
       web3.shh.post({
         "topics": ["NostroAccountManagement"],
@@ -59,7 +59,6 @@ function startNostroAccountManagementListeners(){
         // TODO: ask which token!
         var contractInstance = contractList[activeContractNr].contractInstance;
         var counterparties = contractList[activeContractNr].counterparties;
-        console.log('counterparties:', counterparties);
         util.GetThisNodesConstellationPubKey(function(constellationKey){
           while(counterparties.indexOf(constellationKey) >= 0){
             counterparties.splice(counterparties.indexOf(constellationKey), 1);
@@ -398,9 +397,10 @@ function requestNostroTopUp(cb){
     });
     var filter = web3.shh.filter({"topics":["NostroAccountManagement"]}).watch(function(err, msg) {
       if(err){console.log("ERROR:", err);};
-      filter.stopWatching();
       var message = util.Hex2a(msg.payload);
+      console.log('requestNostroTopUp message:', message);
       if(message.indexOf('response|topup') >= 0){
+        filter.stopWatching();
         var messageArr = message.split('|');
         var approverAddress = messageArr[2];
         //TODO: possible race condition if other party hasn't approved everything yet
@@ -413,6 +413,7 @@ function requestNostroTopUp(cb){
           var callData = 
             contractInstance.approveAndCall.getData(usdzarContract.address, token1Amount, null);
           var gas = web3.eth.estimateGas({data: callData});
+          console.log('calling approve and call');
           contractInstance.approveAndCall(usdzarContract.address, token1Amount, null
           , {from: web3.eth.accounts[0], gas: gas+3000000, privateFor: counterparties} 
           , function(err, txHash){
@@ -460,12 +461,10 @@ function contractSubMenu(cb){
     } else if(o && o.option == 4){
       var contractInstance = contractList[activeContractNr].contractInstance;
       var counterparties = contractList[activeContractNr].counterparties;
-      console.log('counterparties:', counterparties);
       util.GetThisNodesConstellationPubKey(function(constellationKey){
         while(counterparties.indexOf(constellationKey) >= 0){
           counterparties.splice(counterparties.indexOf(constellationKey), 1);
         }
-        console.log('counterparties:', counterparties);
         transfer(contractInstance, counterparties, function(res){
           console.log('Tx hash:', res);
           contractSubMenu(function(res){

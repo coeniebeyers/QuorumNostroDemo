@@ -58,7 +58,8 @@ function startNostroAccountManagementListeners(){
         if(err){console.log('err', err);}
         // TODO: ask which token!
         var contractInstance = contractList[activeContractNr].contractInstance;
-        var counterparties = contractInstance.counterparties;
+        var counterparties = contractList[activeContractNr].counterparties;
+        console.log('counterparties:', counterparties);
         util.GetThisNodesConstellationPubKey(function(constellationKey){
           while(counterparties.indexOf(constellationKey) >= 0){
             counterparties.splice(counterparties.indexOf(constellationKey), 1);

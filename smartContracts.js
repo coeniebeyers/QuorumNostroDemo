@@ -48,7 +48,7 @@ function submitUSDZARContract(deployAccount, privateFor, cb){
     var gas = web3.eth.estimateGas({data: data});
 
     web3.eth.contract(abi)
-    .new(10, {from: deployAccount, data: data, gas: gas+300000, privateFor: privateFor}
+    .new(10, {from: deployAccount, data: data, gas: gas+30000, privateFor: privateFor}
     , function (err, contract) {
       if(err) {
         console.error("ERROR:", err);

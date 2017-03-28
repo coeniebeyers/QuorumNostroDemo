@@ -1,6 +1,6 @@
 pragma solidity ^0.4.2;
 
-contract TokenContract {   
+contract tokenContract {   
   function transferFrom(address _from, address _to, uint256 _value) returns (bool success); 
 }
 
@@ -10,7 +10,7 @@ contract USDZAR {
 
   struct Approval{
     address approver;
-    address tokenContract;
+    address tokenContract_;
     uint256 value;
     uint256 rate;
   }
@@ -19,7 +19,7 @@ contract USDZAR {
 
   event ApprovedExchange(
       address indexed approver
-    , address indexed tokenContract
+    , address indexed tokenContract_
     , uint256 indexed value
     , uint256 rate
   );
@@ -29,28 +29,28 @@ contract USDZAR {
   }
 
   // TODO: Should approvals only be valid for a specified time?
-  function addApproval(address requester, address tokenContract, uint256 value, uint256 rate) 
+  function addApproval(address requester, address tokenContract_, uint256 value, uint256 rate) 
     returns (bool success){
 
     Approval memory newApproval = Approval({
       approver: msg.sender,
-      tokenContract: tokenContract,
+      tokenContract_: tokenContract_,
       value: value,
       rate: rate
     });
     approvals[requester] = newApproval;
-    ApprovedExchange(msg.sender, tokenContract, value, rate);
+    ApprovedExchange(msg.sender, tokenContract_, value, rate);
     return true;
   }
 
-  function receiveApproval(address requester, uint256 value, address tokenContract, bytes extraData)
+  function receiveApproval(address requester, uint256 value, address tokenContract_, bytes extraData)
     returns (bool success) {
     //TODO: first check both balances 
     var approval = approvals[requester];
     //TODO: check that approval hasn't expired yet
     //TODO: check rate against value approved for
-    TokenContract token1 = TokenContract(approval.tokenContract);
-    TokenContract token2 = TokenContract(tokenContract);
+    tokenContract token1 = tokenContract(approval.tokenContract_);
+    tokenContract token2 = tokenContract(tokenContract_);
     //TODO: add checks for success
     token1.transferFrom(requester, approval.approver, value);
     token2.transferFrom(approval.approver, requester, approval.value);

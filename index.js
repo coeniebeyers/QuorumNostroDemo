@@ -152,6 +152,9 @@ function startCounterpartyListeners(){
         address: contractObj.address,
         abi: contractObj.abi
       });
+      if(contractList.length == 3){
+        usdzarContract = contractList[2];
+      }
     }
   });
 }

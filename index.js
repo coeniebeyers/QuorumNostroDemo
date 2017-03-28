@@ -65,6 +65,11 @@ function startNostroAccountManagementListeners(){
           }
           var callData = contractInstance.approve.getData(usdzarContract.address, amount);
           var gas = web3.eth.estimateGas({data: callData});
+          console.log('Calling approve');
+          console.log('active contract address:', contractList[activeContractNr].address);
+          console.log('usdzarContract.address:', usdzarContract.address);
+          console.log('amount:', amount);
+          console.log('approver:', web3.eth.accounts[0]);
           contractInstance.approve(usdzarContract.address, amount, 
             {from: web3.eth.accounts[0], gas: gas, privateFor: counterparties} 
             , function(err, txHash){
@@ -73,7 +78,13 @@ function startNostroAccountManagementListeners(){
             var usdzarContractInstance = contracts.GetContractInstance(
                                     usdzarContract.abi
                                   , usdzarContract.address);
-            usdzarContractInstance.addApproval(requesterAddress, tokenAddress, amount, 13,   
+            console.log('Calling addApproval');
+            console.log('usdzarContract.address:', usdzarContract.address);
+            console.log('amount:', amount);
+            console.log('approver:', web3.eth.accounts[0]);
+            console.log('requesterAddress:', requesterAddress);
+            console.log('tokenAddress:', tokenAddress);
+            usdzarContractInstance.addApproval(requesterAddress, tokenAddress, amount, 10,   
               {from: web3.eth.accounts[0], gas: gas, privateFor: counterparties} 
               , function(err, txHash){
               if(err){console.log('ERROR:', err)}
@@ -382,7 +393,7 @@ function deployUSDZARContract(cb){
 function requestNostroTopUp(cb){
   prompt.get(['amount'], function(err, o){
     var token2Amount = Number(o.amount);
-    var token1Amount = Math.round(token2Amount*10)
+    var token1Amount = Math.round(token2Amount*10);
     var message = 'request|topup|'+token2Amount+'|'+web3.eth.accounts[0];
     message += '|'+contractList[activeContractNr].address;
     var hexString = new Buffer(message).toString('hex');
@@ -413,19 +424,39 @@ function requestNostroTopUp(cb){
           var callData = 
             contractInstance.approveAndCall.getData(usdzarContract.address, token1Amount, null);
           var gas = web3.eth.estimateGas({data: callData});
-          console.log('calling approve and call');
-          contractInstance.approveAndCall(usdzarContract.address, token1Amount, null
-          , {from: web3.eth.accounts[0], gas: gas+3000000, privateFor: counterparties} 
-          , function(err, txHash){
-            if(err){console.log('ERROR:', err)}
-            console.log('Tx hash:', txHash);
-            contractSubMenu(function(res){
-              cb(res);
+          setTimeout(function(){
+            console.log('calling approve and call:');
+            console.log('active contract address:', contractList[activeContractNr].address);
+            console.log('usdzarContract.address:', usdzarContract.address);
+            console.log('token1Amount:', token1Amount);
+            console.log('approver:', web3.eth.accounts[0]);
+            contractInstance.approveAndCall(usdzarContract.address, token1Amount, null
+            , {from: web3.eth.accounts[0], gas: gas+3000000, privateFor: counterparties} 
+            , function(err, txHash){
+              if(err){console.log('ERROR:', err)}
+              console.log('Tx hash:', txHash);
+              contractSubMenu(function(res){
+                cb(res);
+              });
             });
-          });
+          }, 5000);
         });
       }
     });  
+  });
+}
+
+function viewAllowances(cb){
+  prompt.get(["approver", "approved"], function(err, o){
+    var contractInstance = contractList[activeContractNr].contractInstance;
+    contractInstance.allowance(o.approver, o.approved, function(err, amount){
+      if(err){console.log('ERROR:', err)}
+      console.log('Allowance:', amount.toString());
+
+      contractSubMenu(function(res){
+        cb(res);
+      });
+    });
   });
 }
 
@@ -436,6 +467,7 @@ function contractSubMenu(cb){
   console.log('4) Transfer amount to address');
   console.log('5) Change active contract');
   console.log('6) Request Nostro topup');
+  console.log('7) View allowance');
   console.log('0) Return to main menu');
   prompt.get(['option'], function (err, o) {
     if(o && o.option == 1){
@@ -491,6 +523,12 @@ function contractSubMenu(cb){
           cb(res);
         });
       }
+    } else if(o && o.option == 7){
+      viewAllowances(function(res){
+        contractSubMenu(function(res){
+          cb(res);
+        });
+      });
     } else if(o && o.option == 0){
       cb();
       return;

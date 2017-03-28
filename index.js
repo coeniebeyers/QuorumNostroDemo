@@ -36,6 +36,56 @@ var usdzarContract = null;
 
 prompt.start();
 
+function startNostroAccountManagementListeners(){
+  web3.shh.filter({"topics":["NostroAccountManagement"]}).watch(function(err, msg) {
+    if(err){console.log("ERROR:", err);};
+    var message = util.Hex2a(msg.payload);
+    if(message.indexOf('request|topup') >= 0){
+      var messageArr = message.split('|');
+      var amount = Number(messageArr[2]);
+      var requesterAddress = messageArr[3];
+      var tokenAddress = messageArr[4];
+      // Respond with which vostro account should be credited 
+      var message = 'response|topics|'+web3.eth.accounts[0];
+      var hexString = new Buffer(message).toString('hex');
+      web3.shh.post({
+        "topics": ["NostroAccountManagement"],
+        "from": myId,
+        "payload": hexString,
+        "ttl": 10,
+        "workToProve": 1
+      }, function(err, res){
+        if(err){console.log('err', err);}
+        // TODO: ask which token!
+        var contractInstance = contractList[activeContractNr].contractInstance;
+        var counterparties = contractInstance.counterparties;
+        util.GetThisNodesConstellationPubKey(function(constellationKey){
+          while(counterparties.indexOf(constellationKey) >= 0){
+            counterparties.splice(counterparties.indexOf(constellationKey), 1);
+          }
+          var callData = contractInstance.approve.getData(usdzarContract.address, amount);
+          var gas = web3.eth.estimateGas({data: callData});
+          contractInstance.approve(usdzarContract.address, amount, 
+            {from: web3.eth.accounts[0], gas: gas, privateFor: counterparties} 
+            , function(err, txHash){
+            if(err){console.log('ERROR:', err)}
+            console.log('Approved USDZAR contract at token2');
+            var usdzarContractInstance = contracts.GetContractInstance(
+                                    usdzarContract.abi
+                                  , usdzarContract.address);
+            usdzarContractInstance.addApproval(requesterAddress, tokenAddress, amount, 13,   
+              {from: web3.eth.accounts[0], gas: gas, privateFor: counterparties} 
+              , function(err, txHash){
+              if(err){console.log('ERROR:', err)}
+              console.log('Approved requester at USDZAR contract');  
+            });
+          });
+        });
+      }); 
+    } 
+  });
+}
+
 function startConstellationListeners(){
   web3.shh.filter({"topics":["Constellation"]}).watch(function(err, msg) {
     if(err){console.log("ERROR:", err);};
@@ -98,7 +148,9 @@ function startCounterpartyListeners(){
       contractList.push({
         timestamp: new Date(),
         contractInstance: contractInstance,
-        counterparties: counterparties
+        counterparties: counterparties,
+        address: contractObj.address,
+        abi: contractObj.abi
       });
     }
   });
@@ -316,7 +368,7 @@ function deployUSDZARContract(cb){
                               newContract.abi
                             , newContract.address);
 
-      broadcastContractToCounterparties([], newContract, function(){
+      broadcastContractToCounterparties(counterparties, newContract, function(){
         usdzarContract = newContract;
         cb();
       });
@@ -324,13 +376,61 @@ function deployUSDZARContract(cb){
   });
 }
 
+function requestNostroTopUp(cb){
+  prompt.get(['amount'], function(err, o){
+    var token2Amount = Number(o.amount);
+    var token1Amount = Math.round(token2Amount*10)
+    var message = 'request|topup|'+token2Amount+'|'+web3.eth.accounts[0];
+    message += '|'+contractList[activeContractNr].address;
+    var hexString = new Buffer(message).toString('hex');
+    web3.shh.post({
+      "topics": ["NostroAccountManagement"],
+      "from": myId,
+      "payload": hexString,
+      "ttl": 10,
+      "workToProve": 1
+    }, function(err, res){
+      if(err){console.log('err', err);}
+    });
+    var filter = web3.shh.filter({"topics":["NostroAccountManagement"]}).watch(function(err, msg) {
+      if(err){console.log("ERROR:", err);};
+      filter.stopWatching();
+      var message = util.Hex2a(msg.payload);
+      if(message.indexOf('response|topup') >= 0){
+        var messageArr = message.split('|');
+        var approverAddress = messageArr[2];
+        //TODO: possible race condition if other party hasn't approved everything yet
+        var contractInstance = contractList[activeContractNr].contractInstance;
+        var counterparties = contractList[activeContractNr].counterparties;
+        util.GetThisNodesConstellationPubKey(function(constellationKey){
+          while(counterparties.indexOf(constellationKey) >= 0){
+            counterparties.splice(counterparties.indexOf(constellationKey), 1);
+          }
+          var callData = 
+            contractInstance.approveAndCall.getData(usdzarContract.address, token1Amount, null);
+          var gas = web3.eth.estimateGas({data: callData});
+          contractInstance.approveAndCall(usdzarContract.address, token1Amount, null
+          , {from: web3.eth.accounts[0], gas: gas+3000000, privateFor: counterparties} 
+          , function(err, txHash){
+            if(err){console.log('ERROR:', err)}
+            console.log('Tx hash:', txHash);
+            contractSubMenu(function(res){
+              cb(res);
+            });
+          });
+        });
+      }
+    });  
+  });
+}
+
 function contractSubMenu(cb){
-  console.log('1) Deploy private ERC20 contract');
+  console.log('1) Deploy currency contract');
   console.log('2) Deploy USDZAR contract');
   console.log('3) View address balance');
   console.log('4) Transfer amount to address');
   console.log('5) Change active contract');
-  console.log('6) View exchange rate');
+  console.log('6) Request Nostro topup');
   console.log('0) Return to main menu');
   prompt.get(['option'], function (err, o) {
     if(o && o.option == 1){
@@ -377,26 +477,9 @@ function contractSubMenu(cb){
       });      
     } else if(o && o.option == 6){
       if(usdzarContract != null){
-        var contractInstance = contractList[activeContractNr].contractInstance;
-        var counterparties = contractList[activeContractNr].counterparties;
-        util.GetThisNodesConstellationPubKey(function(constellationKey){
-          while(counterparties.indexOf(constellationKey) >= 0){
-            counterparties.splice(counterparties.indexOf(constellationKey), 1);
-          }
-          web3.eth.defaultAccount = web3.eth.accounts[0];
-          var callData = contractInstance.transfer.getData(o.toAddress, Number(o.amount));
-          var gas = web3.eth.estimateGas({data: callData});
-          contractInstance.fetchUSDZARRate(usdzarContract.address
-          , {from: web3.eth.accounts[0], gas: gas, privateFor: counterparties} 
-          , function(err, txHash){
-            if(err){console.log('ERROR:', err)}
-            contractInstance.lastUSDZARRate(function(err, usdzarRate){
-              if(err){console.log('ERROR:', err)}
-              console.log('usdzarRate:', usdzarRate);
-              contractSubMenu(function(res){
-                cb(res);
-              });
-            });
+        requestNostroTopUp(function(res){
+          contractSubMenu(function(res){
+            cb(res);
           });
         });
       } else {
@@ -454,6 +537,8 @@ function menu(){
 startConstellationListeners();
 startNodeNameListeners();
 startCounterpartyListeners();
+startNostroAccountManagementListeners();
+
 requestNodeNames();
 requestConstellationKeys();
 

@@ -46,7 +46,7 @@ contract USDZAR {
   function receiveApproval(address requester, uint256 value, address tokenContract, bytes extraData)
     returns (bool success) {
     //TODO: first check both balances 
-    var approval = approvals[requester]
+    var approval = approvals[requester];
     //TODO: check that approval hasn't expired yet
     //TODO: check rate against value approved for
     TokenContract token1 = TokenContract(approval.tokenContract);

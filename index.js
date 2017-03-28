@@ -32,6 +32,8 @@ var nodeNames = {};
 var contractList = [];
 var activeContractNr = 0;
 
+var usdzarContract = null;
+
 prompt.start();
 
 function startConstellationListeners(){
@@ -149,19 +151,6 @@ function requestNodeNames(){
   });
 }
 
-function getNodesToShareWith(selectedNumbers, cb){
-  prompt.get(['number'], function(err, p){
-    if(p.number == 0){
-      cb();
-    } else {
-      selectedNumbers.push(p.number);
-      getNodesToShareWith(selectedNumbers, function(res){
-        cb(res);
-      });
-    }
-  });
-}
-
 function resolveNumbersToNodes(selectedNumbers, cb){
   var selectedNodes = [];
   var i = 1;
@@ -201,8 +190,21 @@ function broadcastContractToCounterparties(counterparties, contract, cb){
   });
 }
 
+function getNodesToShareWith(selectedNumbers, cb){
+  prompt.get(['number'], function(err, p){
+    if(p.number == 0){
+      cb();
+    } else {
+      selectedNumbers.push(p.number);
+      getNodesToShareWith(selectedNumbers, function(res){
+        cb(res);
+      });
+    }
+  });
+}
+
 // TODO: housekeeping!!!
-function deployStorageContract(cb){
+function deployPrivateContract(cb){
   console.log('Select whom to include in this contract.'); 
   console.log('Enter a number followed by enter. Select done when complete\n'); 
   var selectedNumbers = [];
@@ -218,7 +220,7 @@ function deployStorageContract(cb){
           console.log(node.name);
           counterparties.push(node.constellationKey);
         }
-        contracts.SubmitContract(web3.eth.accounts[0], counterparties, function(newContract){ 
+        contracts.SubmitPrivateContract(web3.eth.accounts[0], counterparties, function(newContract){ 
           var contractInstance = contracts.GetContractInstance(
                                   newContract.abi
                                 , newContract.address);
@@ -303,20 +305,47 @@ function changeActiveContract(cb){
   });
 }
 
+function deployUSDZARContract(cb){
+  var counterparties = contractList[activeContractNr].counterparties;
+  util.GetThisNodesConstellationPubKey(function(constellationKey){
+    while(counterparties.indexOf(constellationKey) >= 0){
+      counterparties.splice(counterparties.indexOf(constellationKey), 1);
+    }
+    contracts.SubmitUSDZARContract(web3.eth.accounts[0], counterparties, function(newContract){ 
+      var contractInstance = contracts.GetContractInstance(
+                              newContract.abi
+                            , newContract.address);
+
+      broadcastContractToCounterparties([], newContract, function(){
+        usdzarContract = newContract;
+        cb();
+      });
+    });
+  });
+}
+
 function contractSubMenu(cb){
-  console.log('1) Deploy private contract');
-  console.log('2) View address balance');
-  console.log('3) Transfer amount to address');
-  console.log('4) Change active contract');
+  console.log('1) Deploy private ERC20 contract');
+  console.log('2) Deploy USDZAR contract');
+  console.log('3) View address balance');
+  console.log('4) Transfer amount to address');
+  console.log('5) Change active contract');
+  console.log('6) View exchange rate');
   console.log('0) Return to main menu');
   prompt.get(['option'], function (err, o) {
     if(o && o.option == 1){
-      deployStorageContract(function(){
+      deployPrivateContract(function(){
         contractSubMenu(function(res){
           cb(res);
         });
       }); 
     } else if(o && o.option == 2){
+      deployUSDZARContract(function(){
+        contractSubMenu(function(res){
+          cb(res);
+        });
+      }); 
+    } else if(o && o.option == 3){
       var contractInstance = contractList[activeContractNr].contractInstance;
       balanceOf(contractInstance, function(res){
         console.log('Balance:', res);
@@ -324,7 +353,7 @@ function contractSubMenu(cb){
           cb(res);
         });
       });      
-    } else if(o && o.option == 3){
+    } else if(o && o.option == 4){
       var contractInstance = contractList[activeContractNr].contractInstance;
       var counterparties = contractList[activeContractNr].counterparties;
       console.log('counterparties:', counterparties);
@@ -340,12 +369,35 @@ function contractSubMenu(cb){
           });
         });      
       });
-    } else if(o && o.option == 4){
+    } else if(o && o.option == 5){
       changeActiveContract(function(res){
         contractSubMenu(function(res){
           cb(res);
         });
       });      
+    } else if(o && o.option == 6){
+      var contractInstance = contractList[activeContractNr].contractInstance;
+      var counterparties = contractList[activeContractNr].counterparties;
+      util.GetThisNodesConstellationPubKey(function(constellationKey){
+        while(counterparties.indexOf(constellationKey) >= 0){
+          counterparties.splice(counterparties.indexOf(constellationKey), 1);
+        }
+        web3.eth.defaultAccount = web3.eth.accounts[0];
+        var callData = contractInstance.transfer.getData(o.toAddress, Number(o.amount));
+        var gas = web3.eth.estimateGas({data: callData});
+        contractInstance.fetchUSDZARRate(usdzarContract.address
+        , {from: web3.eth.accounts[0], gas: gas, privateFor: counterparties} 
+        , function(err, txHash){
+          if(err){console.log('ERROR:', err)}
+          contractInstance.lastUSDZARRate(function(err, usdzarRate){
+            if(err){console.log('ERROR:', err)}
+            console.log('usdzarRate:', usdzarRate);
+            contractSubMenu(function(res){
+              cb(res);
+            });
+          });
+        });
+      });
     } else if(o && o.option == 0){
       cb();
       return;

@@ -1,7 +1,5 @@
 pragma solidity ^0.4.2;
 
-contract USDZAR {function getRate () returns (uint256);}
-
 contract tokenRecipient { function receiveApproval(address _from, uint256 _value, address _token, bytes _extraData); }
 
 contract MyToken {
@@ -11,8 +9,6 @@ contract MyToken {
   string public symbol;
   uint8 public decimals;
   uint256 public totalSupply;
-
-  uint256 public lastUSDZARRate;
 
   /* This creates an array with all balances */
   mapping (address => uint256) public balanceOf;
@@ -34,11 +30,6 @@ contract MyToken {
     symbol = tokenSymbol;                               // Set the symbol for display purposes
     decimals = decimalUnits;                            // Amount of decimals for display purposes
   }
-
-  function fetchUSDZARRate(address address_){
-    USDZAR usdZARContract = USDZAR(address_);    
-    lastUSDZARRate = usdZARContract.getRate(); 
-  }  
 
   /* Send coins */
   function transfer(address _to, uint256 _value) {

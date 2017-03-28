@@ -17,7 +17,7 @@ contract USDZAR {
 
   mapping(address => Approval) approvals;
 
-  event Approval(
+  event ApprovedExchange(
       address indexed approver
     , address indexed tokenContract
     , uint256 indexed value
@@ -39,7 +39,7 @@ contract USDZAR {
       rate: rate
     });
     approvals[requester] = newApproval;
-    Approval(msg.sender, tokenContract, value, rate);
+    ApprovedExchange(msg.sender, tokenContract, value, rate);
     return true;
   }
 

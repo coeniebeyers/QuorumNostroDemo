@@ -65,8 +65,9 @@ function startNostroAccountManagementListeners(){
           }
           var callData = contractInstance.approve.getData(usdzarContract.address, amount);
           var gas = web3.eth.estimateGas({data: callData});
+          var activeContractAddress = contractList[activeContractNr].address;
           console.log('Calling approve');
-          console.log('active contract address:', contractList[activeContractNr].address);
+          console.log('active contract address:', activeContractAddress);
           console.log('usdzarContract.address:', usdzarContract.address);
           console.log('amount:', amount);
           console.log('approver:', web3.eth.accounts[0]);
@@ -83,8 +84,8 @@ function startNostroAccountManagementListeners(){
             console.log('amount:', amount);
             console.log('approver:', web3.eth.accounts[0]);
             console.log('requesterAddress:', requesterAddress);
-            console.log('tokenAddress:', tokenAddress);
-            usdzarContractInstance.addApproval(requesterAddress, tokenAddress, amount, 10,   
+            console.log('activeContractAddress:', activeContractAddress);
+            usdzarContractInstance.addApproval(requesterAddress, activeContractAddress, amount, 10,   
               {from: web3.eth.accounts[0], gas: gas, privateFor: counterparties} 
               , function(err, txHash){
               if(err){console.log('ERROR:', err)}

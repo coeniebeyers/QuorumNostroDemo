@@ -47,7 +47,10 @@ contract USDZAR {
 
   function receiveApproval(address requester, uint256 value, address tokenContract_, bytes extraData)
     returns (bool success) {
-    //TODO: first check both balances 
+    LogAddress(requester);
+    LogAddress(tokenContract_);
+    LogValue(value);
+    //TODO: first check both balances? 
     Approval approval = approvals[requester];
     LogAddress(approval.approver);
     LogAddress(approval.tokenContract_);
@@ -60,7 +63,7 @@ contract USDZAR {
     //TODO: add checks for success
     token1.transferFrom(requester, approval.approver, value);
     token2.transferFrom(approval.approver, requester, approval.value);
-    Log(2);
+    LogValue(2);
     return true;
   }
 

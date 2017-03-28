@@ -58,7 +58,7 @@ function startNostroAccountManagementListeners(){
         if(err){console.log('err', err);}
         // TODO: ask which token!
         var contractInstance = contractList[activeContractNr].contractInstance;
-        var counterparties = contractList[activeContractNr].counterparties;
+        var counterparties = Object.assign({}, contractList[activeContractNr].counterparties);
         util.GetThisNodesConstellationPubKey(function(constellationKey){
           while(counterparties.indexOf(constellationKey) >= 0){
             counterparties.splice(counterparties.indexOf(constellationKey), 1);
@@ -361,7 +361,7 @@ function changeActiveContract(cb){
 }
 
 function deployUSDZARContract(cb){
-  var counterparties = contractList[activeContractNr].counterparties;
+  var counterparties = Object.assign({}, contractList[activeContractNr].counterparties);
   util.GetThisNodesConstellationPubKey(function(constellationKey){
     while(counterparties.indexOf(constellationKey) >= 0){
       counterparties.splice(counterparties.indexOf(constellationKey), 1);
@@ -405,7 +405,7 @@ function requestNostroTopUp(cb){
         var approverAddress = messageArr[2];
         //TODO: possible race condition if other party hasn't approved everything yet
         var contractInstance = contractList[activeContractNr].contractInstance;
-        var counterparties = contractList[activeContractNr].counterparties;
+        var counterparties = Object.assign({}, contractList[activeContractNr].counterparties);
         util.GetThisNodesConstellationPubKey(function(constellationKey){
           while(counterparties.indexOf(constellationKey) >= 0){
             counterparties.splice(counterparties.indexOf(constellationKey), 1);
@@ -460,7 +460,7 @@ function contractSubMenu(cb){
       });      
     } else if(o && o.option == 4){
       var contractInstance = contractList[activeContractNr].contractInstance;
-      var counterparties = contractList[activeContractNr].counterparties;
+      var counterparties = Object.assign({}, contractList[activeContractNr].counterparties);
       util.GetThisNodesConstellationPubKey(function(constellationKey){
         while(counterparties.indexOf(constellationKey) >= 0){
           counterparties.splice(counterparties.indexOf(constellationKey), 1);

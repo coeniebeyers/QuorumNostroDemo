@@ -38,7 +38,7 @@ contract USDZAR {
       value: value,
       rate: rate
     });
-    mapping[requester] = newApproval;
+    approvals[requester] = newApproval;
     Approval(msg.sender, tokenContract, value, rate);
     return true;
   }

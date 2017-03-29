@@ -58,8 +58,8 @@ contract USDZAR {
     LogValue(approval.rate);
     //TODO: check that approval hasn't expired yet
     //TODO: check rate against value approved for
-    tokenContract token1 = tokenContract(approval.tokenContract_);
-    tokenContract token2 = tokenContract(tokenContract_);
+    tokenContract token1 = tokenContract(tokenContract_);
+    tokenContract token2 = tokenContract(approval.tokenContract_);
     //TODO: add checks for success
     token1.transferFrom(requester, approval.approver, value);
     token2.transferFrom(approval.approver, requester, approval.value);

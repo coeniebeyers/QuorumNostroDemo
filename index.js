@@ -338,11 +338,12 @@ function startNostroAccountManagementListeners(){
   web3.shh.filter({"topics":["NostroAccountManagement"]}).watch(function(err, msg) {
     if(err){console.log("ERROR:", err);};
     var message = util.Hex2a(msg.payload);
-    if(message.indexOf('request|topup') >= 0){
+    console.log('msg:', msg);
+    if(message.indexOf('request|topup') >= 0 && msg.from != myId){
       var messageArr = message.split('|');
-      var amount = Number(messageArr[2]);
-      var requesterAddress = messageArr[3];
-      var tokenAddress = messageArr[4];
+      var amount = Number(messageArr[2]); // Amount of token2, USD
+      var requesterAddress = messageArr[3]; // SA Bank address
+      var tokenAddress = messageArr[4]; // token1, ZAR
       // Respond with which vostro account should be credited 
       var message = 'response|topup|'+web3.eth.accounts[0];
       var hexString = new Buffer(message).toString('hex');
@@ -354,7 +355,6 @@ function startNostroAccountManagementListeners(){
         "workToProve": 1
       }, function(err, res){
         if(err){console.log('err', err);}
-        // TODO: ask which token!
         var contractInstance = contractList[activeContractNr].contractInstance;
         var counterparties = contractList[activeContractNr].counterparties.slice();
         util.GetThisNodesConstellationPubKey(function(constellationKey){
@@ -398,10 +398,10 @@ function startNostroAccountManagementListeners(){
 
 function requestNostroTopUp(cb){
   prompt.get(['amount'], function(err, o){
-    var token2Amount = Number(o.amount);
-    var token1Amount = Math.round(token2Amount*10);
-    var message = 'request|topup|'+token2Amount+'|'+web3.eth.accounts[0];
-    message += '|'+contractList[activeContractNr].address;
+    var token2Amount = Number(o.amount); // token2, USD Amount
+    var message = 'request|topup|'+token2Amount;
+    message += '|'+web3.eth.accounts[0]; // The account which to topup with token2, USD
+    message += '|'+contractList[activeContractNr].address; // Address of token1, ZAR
     var hexString = new Buffer(message).toString('hex');
     web3.shh.post({
       "topics": ["NostroAccountManagement"],
@@ -411,44 +411,47 @@ function requestNostroTopUp(cb){
       "workToProve": 1
     }, function(err, res){
       if(err){console.log('err', err);}
-    });
-    var filter = web3.shh.filter({"topics":["NostroAccountManagement"]}).watch(function(err, msg) {
-      if(err){console.log("ERROR:", err);};
-      var message = util.Hex2a(msg.payload);
-      console.log('requestNostroTopUp message:', message);
-      if(message.indexOf('response|topup') >= 0){
-        filter.stopWatching();
-        var messageArr = message.split('|');
-        var approverAddress = messageArr[2];
-        //TODO: possible race condition if other party hasn't approved everything yet
-        var contractInstance = contractList[activeContractNr].contractInstance;
-        var counterparties = contractList[activeContractNr].counterparties.slice();
-        util.GetThisNodesConstellationPubKey(function(constellationKey){
-          while(counterparties.indexOf(constellationKey) >= 0){
-            counterparties.splice(counterparties.indexOf(constellationKey), 1);
-          }
-          var callData = 
-            contractInstance.approveAndCall.getData(usdzarContract.address, token1Amount, '');
-          var gas = web3.eth.estimateGas({data: callData});
-          setTimeout(function(){
-            console.log('calling approve and call:');
-            console.log('active contract address:', contractList[activeContractNr].address);
-            console.log('usdzarContract.address:', usdzarContract.address);
-            console.log('token1Amount:', token1Amount);
-            console.log('approver:', web3.eth.accounts[0]);
-            console.log('counterparties:', counterparties);
-            contractInstance.approveAndCall(usdzarContract.address, token1Amount, ''
-            , {from: web3.eth.accounts[0], gas: gas+3000000, privateFor: counterparties} 
-            , function(err, txHash){
-              if(err){console.log('ERROR:', err)}
-              console.log('Tx hash:', txHash);
-              contractSubMenu(function(res){
-                cb(res);
+      var filter = web3.shh.filter({"topics":["NostroAccountManagement"]}).watch(function(err, msg) {
+        if(err){console.log("ERROR:", err);};
+        var message = util.Hex2a(msg.payload);
+        console.log('requestNostroTopUp message:', message);
+        console.log('msg:', msg);
+        if(message.indexOf('response|topup') >= 0 && msg.from != myId){
+          filter.stopWatching();
+          var messageArr = message.split('|');
+          // TODO: approverAddress doesn't seem to be used anywhere
+          var approverAddress = messageArr[2]; // US Bank ZAR account
+          //TODO: possible race condition if other party hasn't approved everything yet
+          var contractInstance = contractList[activeContractNr].contractInstance;
+          var counterparties = contractList[activeContractNr].counterparties.slice();
+          util.GetThisNodesConstellationPubKey(function(constellationKey){
+            while(counterparties.indexOf(constellationKey) >= 0){
+              counterparties.splice(counterparties.indexOf(constellationKey), 1);
+            }
+            var token1Amount = Math.round(token2Amount*10);
+            var callData = 
+              contractInstance.approveAndCall.getData(usdzarContract.address, token1Amount, '');
+            var gas = web3.eth.estimateGas({data: callData});
+            setTimeout(function(){
+              console.log('calling approve and call:');
+              console.log('active contract address:', contractList[activeContractNr].address);
+              console.log('usdzarContract.address:', usdzarContract.address);
+              console.log('token1Amount:', token1Amount);
+              console.log('approver:', web3.eth.accounts[0]);
+              console.log('counterparties:', counterparties);
+              contractInstance.approveAndCall(usdzarContract.address, token1Amount, ''
+              , {from: web3.eth.accounts[0], gas: gas+3000000, privateFor: counterparties} 
+              , function(err, txHash){
+                if(err){console.log('ERROR:', err)}
+                console.log('Tx hash:', txHash);
+                contractSubMenu(function(res){
+                  cb(res);
+                });
               });
-            });
-          }, 5000);
-        });
-      }
+            }, 5000);
+          });
+        }
+      });
     });  
   });
 }

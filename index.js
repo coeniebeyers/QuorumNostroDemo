@@ -29,10 +29,11 @@ var nodeIdentityName = 'unset';
 var constellationNodes = {};
 // TODO: rename object collections to mappings
 var nodeNames = {};
-var contractList = [];
-var activeContractNr = 0;
+var currencyContractList = [];
+var activeCurrencyContractNr = 0;
 
-var usdzarContract = null;
+var forexContractList = [];
+var activeForexContractNr = 0;
 
 prompt.start();
 
@@ -86,8 +87,8 @@ function startNodeNameListeners(){
 }
 
 // TODO: add token to message giving the contract a name
-function startCounterpartyListeners(){
-  web3.shh.filter({"topics":["Counterparty"]}).watch(function(err, msg) {
+function startCurrencyContractListeners(){
+  web3.shh.filter({"topics":["Currency"]}).watch(function(err, msg) {
     if(err){console.log("ERROR:", err);};
     var message = util.Hex2a(msg.payload);
     if(message.indexOf('info') >= 0){
@@ -95,16 +96,33 @@ function startCounterpartyListeners(){
       var contractObj = JSON.parse(messageArr[1]);
       var contractInstance = contracts.GetContractInstance(contractObj.abi, contractObj.address);
       var counterparties = JSON.parse(messageArr[2]);
-      contractList.push({
+      currencyContractList.push({
         timestamp: new Date(),
         contractInstance: contractInstance,
         counterparties: counterparties,
         address: contractObj.address,
         abi: contractObj.abi
       });
-      if(contractList.length == 3){
-        usdzarContract = contractList[2];
-      }
+    }
+  });
+}
+
+function startForexContractListeners(){
+  web3.shh.filter({"topics":["Forex"]}).watch(function(err, msg) {
+    if(err){console.log("ERROR:", err);};
+    var message = util.Hex2a(msg.payload);
+    if(message.indexOf('info') >= 0){
+      var messageArr = message.split('|');
+      var contractObj = JSON.parse(messageArr[1]);
+      var contractInstance = contracts.GetContractInstance(contractObj.abi, contractObj.address);
+      var counterparties = JSON.parse(messageArr[2]);
+      forexContractList.push({
+        timestamp: new Date(),
+        contractInstance: contractInstance,
+        counterparties: counterparties,
+        address: contractObj.address,
+        abi: contractObj.abi
+      });
     }
   });
 }
@@ -176,7 +194,7 @@ function resolveNumbersToNodes(selectedNumbers, cb){
   cb(selectedNodes);
 }
 
-function broadcastContractToCounterparties(counterparties, contract, cb){
+function broadcastForexContractToCounterparties(counterparties, contract, cb){
   var payload = 'info';
   payload += '|'+JSON.stringify(contract);
   payload += '|'+JSON.stringify(counterparties);
@@ -184,7 +202,26 @@ function broadcastContractToCounterparties(counterparties, contract, cb){
   // TODO: there needs to be a 'to' field added so that other non-counterparty 
   //        nodes can't listen in
   web3.shh.post({
-    "topics": ["Counterparty"],
+    "topics": ["Forex"],
+    "from": myId,
+    "payload": hexPayload,
+    "ttl": 10,
+    "workToProve": 1
+  }, function(err, res){
+    if(err){console.log('err', err);}
+    cb();
+  });
+}
+
+function broadcastCurrencyContractToCounterparties(counterparties, contract, cb){
+  var payload = 'info';
+  payload += '|'+JSON.stringify(contract);
+  payload += '|'+JSON.stringify(counterparties);
+  var hexPayload = new Buffer(payload).toString('hex');
+  // TODO: there needs to be a 'to' field added so that other non-counterparty 
+  //        nodes can't listen in
+  web3.shh.post({
+    "topics": ["Currency"],
     "from": myId,
     "payload": hexPayload,
     "ttl": 10,
@@ -232,7 +269,7 @@ function deployPrivateContract(cb){
 
           util.GetThisNodesConstellationPubKey(function(constellationKey){
             counterparties.push(constellationKey);
-            broadcastContractToCounterparties(counterparties, newContract, function(){
+            broadcastCurrencyContractToCounterparties(counterparties, newContract, function(){
               cb();
             });
           });
@@ -285,25 +322,50 @@ function resolveCounterpartyNames(counterparties){
   return counterpartyNames;
 }
 
-function displayAvailableContracts(cb){
-  for(var i in contractList){
-    var contract = contractList[i];
+function displayAvailableForexContracts(cb){
+  for(var i in forexContractList){
+    var contract = forexContractList[i];
     var counterpartyNames = resolveCounterpartyNames(contract.counterparties);
     console.log(i+') '+new Date(contract.timestamp) + ' | '+ counterpartyNames);
   }
   cb();
 }
 
-function changeActiveContract(cb){
+function changeActiveForexContract(cb){
   console.log('Please select a contract to make active');
-  displayAvailableContracts(function(){
+  displayAvailableForexContracts(function(){
     console.log('---');
     prompt.get(['contractNr'], function (err, o) {
       var selectedNr = Number(o.contractNr);
-      if(selectedNr < contractList.length){
-        activeContractNr = selectedNr;
+      if(selectedNr < forexContractList.length){
+        activeForexContractNr = selectedNr;
       } else {
-        console.log('Nr too high! Select a number below:', contractList.length);
+        console.log('Nr too high! Select a number below:', forexContractList.length);
+      }
+      cb();
+    });
+  });
+}
+
+function displayAvailableCurrencyContracts(cb){
+  for(var i in currencyContractList){
+    var contract = currencyContractList[i];
+    var counterpartyNames = resolveCounterpartyNames(contract.counterparties);
+    console.log(i+') '+new Date(contract.timestamp) + ' | '+ counterpartyNames);
+  }
+  cb();
+}
+
+function changeActiveCurrencyContract(cb){
+  console.log('Please select a contract to make active');
+  displayAvailableCurrencyContractsContracts(function(){
+    console.log('---');
+    prompt.get(['contractNr'], function (err, o) {
+      var selectedNr = Number(o.contractNr);
+      if(selectedNr < currencyContractList.length){
+        activeCurrencyContractNr = selectedNr;
+      } else {
+        console.log('Nr too high! Select a number below:', currencyContractList.length);
       }
       cb();
     });
@@ -311,7 +373,7 @@ function changeActiveContract(cb){
 }
 
 function deployUSDZARContract(cb){
-  var counterparties = contractList[activeContractNr].counterparties.slice();
+  var counterparties = currencyContractList[activeCurrencyContractNr].counterparties.slice();
   util.GetThisNodesConstellationPubKey(function(constellationKey){
     while(counterparties.indexOf(constellationKey) >= 0){
       counterparties.splice(counterparties.indexOf(constellationKey), 1);
@@ -321,8 +383,7 @@ function deployUSDZARContract(cb){
                               newContract.abi
                             , newContract.address);
 
-      broadcastContractToCounterparties(counterparties, newContract, function(){
-        usdzarContract = newContract;
+      broadcastForexContractToCounterparties(counterparties, newContract, function(){
         cb();
       });
     });
@@ -349,22 +410,23 @@ function startNostroAccountManagementListeners(){
         "workToProve": 1
       }, function(err, res){
         if(err){console.log('err', err);}
-        var contractInstance = contractList[activeContractNr].contractInstance;
-        var counterparties = contractList[activeContractNr].counterparties.slice();
+        var contractInstance = currencyContractList[activeCurrencyContractNr].contractInstance;
+        var counterparties = currencyContractList[activeCurrencyContractNr].counterparties.slice();
         util.GetThisNodesConstellationPubKey(function(constellationKey){
           while(counterparties.indexOf(constellationKey) >= 0){
             counterparties.splice(counterparties.indexOf(constellationKey), 1);
           }
-          var callData = contractInstance.approve.getData(usdzarContract.address, amount);
+          var activeForexContract = forexContractList[activeForexContractNr];
+          var callData = contractInstance.approve.getData(activeForexContract.address, amount);
           var gas = web3.eth.estimateGas({data: callData});
-          var activeContractAddress = contractList[activeContractNr].address;
-          contractInstance.approve(usdzarContract.address, amount, 
+          var activeContractAddress = currencyContractList[activeCurrencyContractNr].address;
+          contractInstance.approve(activeForexContract.address, amount, 
             {from: web3.eth.accounts[0], gas: gas, privateFor: counterparties} 
             , function(err, txHash){
             if(err){console.log('ERROR:', err)}
             var usdzarContractInstance = contracts.GetContractInstance(
-                                    usdzarContract.abi
-                                  , usdzarContract.address);
+                                    activeForexContract.abi
+                                  , activeForexContract.address);
             usdzarContractInstance.addApproval(requesterAddress, activeContractAddress, amount, 10,  
               {from: web3.eth.accounts[0], gas: gas, privateFor: counterparties} 
               , function(err, txHash){
@@ -382,7 +444,7 @@ function requestNostroTopUp(cb){
     var token2Amount = Number(o.amount); // token2, USD Amount
     var message = 'request|topup|'+token2Amount;
     message += '|'+web3.eth.accounts[0]; // The account which to topup with token2, USD
-    message += '|'+contractList[activeContractNr].address; // Address of token1, ZAR
+    message += '|'+currencyContractList[activeCurrencyContractNr].address; // Address of token1, ZAR
     var hexString = new Buffer(message).toString('hex');
     web3.shh.post({
       "topics": ["NostroAccountManagement"],
@@ -401,18 +463,19 @@ function requestNostroTopUp(cb){
           // TODO: approverAddress doesn't seem to be used anywhere
           var approverAddress = messageArr[2]; // US Bank ZAR account
           //TODO: possible race condition if other party hasn't approved everything yet
-          var contractInstance = contractList[activeContractNr].contractInstance;
-          var counterparties = contractList[activeContractNr].counterparties.slice();
+          var contractInstance = currencyContractList[activeCurrencyContractNr].contractInstance;
+          var counterparties = currencyContractList[activeCurrencyContractNr].counterparties.slice();
           util.GetThisNodesConstellationPubKey(function(constellationKey){
             while(counterparties.indexOf(constellationKey) >= 0){
               counterparties.splice(counterparties.indexOf(constellationKey), 1);
             }
             var token1Amount = Math.round(token2Amount*10);
+            var activeForexContract = forexContractList[activeForexContractNr];
             var callData = 
-              contractInstance.approveAndCall.getData(usdzarContract.address, token1Amount, '');
+              contractInstance.approveAndCall.getData(activeForexContract.address, token1Amount, '');
             var gas = web3.eth.estimateGas({data: callData});
             setTimeout(function(){
-              contractInstance.approveAndCall(usdzarContract.address, token1Amount, ''
+              contractInstance.approveAndCall(activeForexContract.address, token1Amount, ''
               , {from: web3.eth.accounts[0], gas: gas+3000000, privateFor: counterparties} 
               , function(err, txHash){
                 if(err){console.log('ERROR:', err)}
@@ -430,7 +493,7 @@ function requestNostroTopUp(cb){
 
 function viewAllowances(cb){
   prompt.get(["approver", "approved"], function(err, o){
-    var contractInstance = contractList[activeContractNr].contractInstance;
+    var contractInstance = currencyContractList[activeCurrencyContractNr].contractInstance;
     contractInstance.allowance(o.approver, o.approved, function(err, amount){
       if(err){console.log('ERROR:', err)}
       console.log('Allowance:', amount.toString());
@@ -447,9 +510,9 @@ function contractSubMenu(cb){
   console.log('2) Deploy USDZAR contract');
   console.log('3) View address balance');
   console.log('4) Transfer amount to address');
-  console.log('5) Change active contract');
-  console.log('6) Request Nostro topup');
-  console.log('7) View allowance');
+  console.log('5) Change active Currency contract');
+  console.log('6) Change active Forex contract');
+  console.log('7) Request Nostro topup');
   console.log('0) Return to main menu');
   prompt.get(['option'], function (err, o) {
     if(o && o.option == 1){
@@ -465,7 +528,7 @@ function contractSubMenu(cb){
         });
       }); 
     } else if(o && o.option == 3){
-      var contractInstance = contractList[activeContractNr].contractInstance;
+      var contractInstance = currencyContractList[activeCurrencyContractNr].contractInstance;
       balanceOf(contractInstance, function(res){
         console.log('Balance:', res);
         contractSubMenu(function(res){
@@ -473,8 +536,8 @@ function contractSubMenu(cb){
         });
       });      
     } else if(o && o.option == 4){
-      var contractInstance = contractList[activeContractNr].contractInstance;
-      var counterparties = contractList[activeContractNr].counterparties.slice();
+      var contractInstance = currencyContractList[activeCurrencyContractNr].contractInstance;
+      var counterparties = currencyContractList[activeCurrencyContractNr].counterparties.slice();
       util.GetThisNodesConstellationPubKey(function(constellationKey){
         while(counterparties.indexOf(constellationKey) >= 0){
           counterparties.splice(counterparties.indexOf(constellationKey), 1);
@@ -487,13 +550,19 @@ function contractSubMenu(cb){
         });      
       });
     } else if(o && o.option == 5){
-      changeActiveContract(function(res){
+      changeActiveCurrencyContract(function(res){
         contractSubMenu(function(res){
           cb(res);
         });
       });      
     } else if(o && o.option == 6){
-      if(usdzarContract != null){
+      changeActiveForexContract(function(res){
+        contractSubMenu(function(res){
+          cb(res);
+        });
+      });      
+    } else if(o && o.option == 7){
+      if(forexContractList.length == 0){
         requestNostroTopUp(function(res){
           contractSubMenu(function(res){
             cb(res);
@@ -505,12 +574,6 @@ function contractSubMenu(cb){
           cb(res);
         });
       }
-    } else if(o && o.option == 7){
-      viewAllowances(function(res){
-        contractSubMenu(function(res){
-          cb(res);
-        });
-      });
     } else if(o && o.option == 0){
       cb();
       return;
@@ -558,7 +621,8 @@ function menu(){
 
 startConstellationListeners();
 startNodeNameListeners();
-startCounterpartyListeners();
+startCurrencyContractListeners();
+startForexContractListeners();
 startNostroAccountManagementListeners();
 
 requestNodeNames();

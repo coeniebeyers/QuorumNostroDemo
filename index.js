@@ -36,68 +36,6 @@ var usdzarContract = null;
 
 prompt.start();
 
-function startNostroAccountManagementListeners(){
-  web3.shh.filter({"topics":["NostroAccountManagement"]}).watch(function(err, msg) {
-    if(err){console.log("ERROR:", err);};
-    var message = util.Hex2a(msg.payload);
-    if(message.indexOf('request|topup') >= 0){
-      var messageArr = message.split('|');
-      var amount = Number(messageArr[2]);
-      var requesterAddress = messageArr[3];
-      var tokenAddress = messageArr[4];
-      // Respond with which vostro account should be credited 
-      var message = 'response|topup|'+web3.eth.accounts[0];
-      var hexString = new Buffer(message).toString('hex');
-      web3.shh.post({
-        "topics": ["NostroAccountManagement"],
-        "from": myId,
-        "payload": hexString,
-        "ttl": 10,
-        "workToProve": 1
-      }, function(err, res){
-        if(err){console.log('err', err);}
-        // TODO: ask which token!
-        var contractInstance = contractList[activeContractNr].contractInstance;
-        var counterparties = contractList[activeContractNr].counterparties.slice();
-        util.GetThisNodesConstellationPubKey(function(constellationKey){
-          while(counterparties.indexOf(constellationKey) >= 0){
-            counterparties.splice(counterparties.indexOf(constellationKey), 1);
-          }
-          var callData = contractInstance.approve.getData(usdzarContract.address, amount);
-          var gas = web3.eth.estimateGas({data: callData});
-          var activeContractAddress = contractList[activeContractNr].address;
-          console.log('Calling approve');
-          console.log('active contract address:', activeContractAddress);
-          console.log('usdzarContract.address:', usdzarContract.address);
-          console.log('amount:', amount);
-          console.log('approver:', web3.eth.accounts[0]);
-          contractInstance.approve(usdzarContract.address, amount, 
-            {from: web3.eth.accounts[0], gas: gas, privateFor: counterparties} 
-            , function(err, txHash){
-            if(err){console.log('ERROR:', err)}
-            console.log('Approved USDZAR contract at token2');
-            var usdzarContractInstance = contracts.GetContractInstance(
-                                    usdzarContract.abi
-                                  , usdzarContract.address);
-            console.log('Calling addApproval');
-            console.log('usdzarContract.address:', usdzarContract.address);
-            console.log('amount:', amount);
-            console.log('approver:', web3.eth.accounts[0]);
-            console.log('requesterAddress:', requesterAddress);
-            console.log('activeContractAddress:', activeContractAddress);
-            usdzarContractInstance.addApproval(requesterAddress, activeContractAddress, amount, 10,   
-              {from: web3.eth.accounts[0], gas: gas, privateFor: counterparties} 
-              , function(err, txHash){
-              if(err){console.log('ERROR:', err)}
-              console.log('Approved requester at USDZAR contract');  
-            });
-          });
-        });
-      }); 
-    } 
-  });
-}
-
 function startConstellationListeners(){
   web3.shh.filter({"topics":["Constellation"]}).watch(function(err, msg) {
     if(err){console.log("ERROR:", err);};
@@ -396,6 +334,68 @@ function deployUSDZARContract(cb){
   });
 }
 
+function startNostroAccountManagementListeners(){
+  web3.shh.filter({"topics":["NostroAccountManagement"]}).watch(function(err, msg) {
+    if(err){console.log("ERROR:", err);};
+    var message = util.Hex2a(msg.payload);
+    if(message.indexOf('request|topup') >= 0){
+      var messageArr = message.split('|');
+      var amount = Number(messageArr[2]);
+      var requesterAddress = messageArr[3];
+      var tokenAddress = messageArr[4];
+      // Respond with which vostro account should be credited 
+      var message = 'response|topup|'+web3.eth.accounts[0];
+      var hexString = new Buffer(message).toString('hex');
+      web3.shh.post({
+        "topics": ["NostroAccountManagement"],
+        "from": myId,
+        "payload": hexString,
+        "ttl": 10,
+        "workToProve": 1
+      }, function(err, res){
+        if(err){console.log('err', err);}
+        // TODO: ask which token!
+        var contractInstance = contractList[activeContractNr].contractInstance;
+        var counterparties = contractList[activeContractNr].counterparties.slice();
+        util.GetThisNodesConstellationPubKey(function(constellationKey){
+          while(counterparties.indexOf(constellationKey) >= 0){
+            counterparties.splice(counterparties.indexOf(constellationKey), 1);
+          }
+          var callData = contractInstance.approve.getData(usdzarContract.address, amount);
+          var gas = web3.eth.estimateGas({data: callData});
+          var activeContractAddress = contractList[activeContractNr].address;
+          console.log('Calling approve');
+          console.log('active contract address:', activeContractAddress);
+          console.log('usdzarContract.address:', usdzarContract.address);
+          console.log('amount:', amount);
+          console.log('approver:', web3.eth.accounts[0]);
+          contractInstance.approve(usdzarContract.address, amount, 
+            {from: web3.eth.accounts[0], gas: gas, privateFor: counterparties} 
+            , function(err, txHash){
+            if(err){console.log('ERROR:', err)}
+            console.log('Approved USDZAR contract at token2');
+            var usdzarContractInstance = contracts.GetContractInstance(
+                                    usdzarContract.abi
+                                  , usdzarContract.address);
+            console.log('Calling addApproval');
+            console.log('usdzarContract.address:', usdzarContract.address);
+            console.log('amount:', amount);
+            console.log('approver:', web3.eth.accounts[0]);
+            console.log('requesterAddress:', requesterAddress);
+            console.log('activeContractAddress:', activeContractAddress);
+            usdzarContractInstance.addApproval(requesterAddress, activeContractAddress, amount, 10,   
+              {from: web3.eth.accounts[0], gas: gas, privateFor: counterparties} 
+              , function(err, txHash){
+              if(err){console.log('ERROR:', err)}
+              console.log('Approved requester at USDZAR contract');  
+            });
+          });
+        });
+      }); 
+    } 
+  });
+}
+
 function requestNostroTopUp(cb){
   prompt.get(['amount'], function(err, o){
     var token2Amount = Number(o.amount);
@@ -467,22 +467,6 @@ function viewAllowances(cb){
   });
 }
 
-function viewUSDZARApproval(cb){
-  prompt.get(["approvalNumber"], function(err, o){
-    var usdzarContractInstance = contracts.GetContractInstance(
-                            usdzarContract.abi
-                          , usdzarContract.address);
-    usdzarContractInstance.approvals(Number(o.approvalNumber), function(err, result){
-      if(err){console.log('ERROR:', err)}
-      console.log('Approvals:', result);
-
-      contractSubMenu(function(res){
-        cb(res);
-      });
-    });
-  });
-}
-
 function contractSubMenu(cb){
   console.log('1) Deploy currency contract');
   console.log('2) Deploy USDZAR contract');
@@ -491,7 +475,6 @@ function contractSubMenu(cb){
   console.log('5) Change active contract');
   console.log('6) Request Nostro topup');
   console.log('7) View allowance');
-  console.log('8) View USDZAR approval');
   console.log('0) Return to main menu');
   prompt.get(['option'], function (err, o) {
     if(o && o.option == 1){
@@ -553,19 +536,6 @@ function contractSubMenu(cb){
           cb(res);
         });
       });
-    } else if(o && o.option == 8){
-      if(usdzarContract != null){
-        viewUSDZARApproval(function(res){
-          contractSubMenu(function(res){
-            cb(res);
-          });
-        });
-      } else {
-        console.log('\nERROR: First deploy the USDZAR contract\n');
-        contractSubMenu(function(res){
-          cb(res);
-        });
-      }
     } else if(o && o.option == 0){
       cb();
       return;
@@ -577,7 +547,6 @@ function contractSubMenu(cb){
   });
 }
 
-// TODO: only display this menu once the accounts have been unlocked
 function menu(){
   console.log('1) Set node name');
   console.log('2) Display known constellation nodes');
@@ -629,7 +598,7 @@ setInterval(function(){
   addressBook.GetAccountsFromOtherNodes();
   requestNodeNames();
   requestConstellationKeys();
-}, 5*1000);
+}, 1*1000);
 
 setTimeout(function(){
   menu();

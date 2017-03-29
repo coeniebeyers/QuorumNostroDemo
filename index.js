@@ -323,11 +323,6 @@ function deployUSDZARContract(cb){
 
       broadcastContractToCounterparties(counterparties, newContract, function(){
         usdzarContract = newContract;
-        web3.eth.filter({fromBlock:0, toBlock: 'latest', address: usdzarContract.address}).watch(
-          function(err, result) {
-          if(err){console.log('ERROR:', err);} 
-          console.log('USDZAR Contract:', result);
-        });
         cb();
       });
     });
@@ -338,7 +333,6 @@ function startNostroAccountManagementListeners(){
   web3.shh.filter({"topics":["NostroAccountManagement"]}).watch(function(err, msg) {
     if(err){console.log("ERROR:", err);};
     var message = util.Hex2a(msg.payload);
-    console.log('msg:', msg);
     if(message.indexOf('request|topup') >= 0 && msg.from != myId){
       var messageArr = message.split('|');
       var amount = Number(messageArr[2]); // Amount of token2, USD
@@ -364,30 +358,17 @@ function startNostroAccountManagementListeners(){
           var callData = contractInstance.approve.getData(usdzarContract.address, amount);
           var gas = web3.eth.estimateGas({data: callData});
           var activeContractAddress = contractList[activeContractNr].address;
-          console.log('Calling approve');
-          console.log('active contract address:', activeContractAddress);
-          console.log('usdzarContract.address:', usdzarContract.address);
-          console.log('amount:', amount);
-          console.log('approver:', web3.eth.accounts[0]);
           contractInstance.approve(usdzarContract.address, amount, 
             {from: web3.eth.accounts[0], gas: gas, privateFor: counterparties} 
             , function(err, txHash){
             if(err){console.log('ERROR:', err)}
-            console.log('Approved USDZAR contract at token2');
             var usdzarContractInstance = contracts.GetContractInstance(
                                     usdzarContract.abi
                                   , usdzarContract.address);
-            console.log('Calling addApproval');
-            console.log('usdzarContract.address:', usdzarContract.address);
-            console.log('amount:', amount);
-            console.log('approver:', web3.eth.accounts[0]);
-            console.log('requesterAddress:', requesterAddress);
-            console.log('activeContractAddress:', activeContractAddress);
-            usdzarContractInstance.addApproval(requesterAddress, activeContractAddress, amount, 10,   
+            usdzarContractInstance.addApproval(requesterAddress, activeContractAddress, amount, 10,  
               {from: web3.eth.accounts[0], gas: gas, privateFor: counterparties} 
               , function(err, txHash){
               if(err){console.log('ERROR:', err)}
-              console.log('Approved requester at USDZAR contract');  
             });
           });
         });
@@ -414,8 +395,6 @@ function requestNostroTopUp(cb){
       var filter = web3.shh.filter({"topics":["NostroAccountManagement"]}).watch(function(err, msg) {
         if(err){console.log("ERROR:", err);};
         var message = util.Hex2a(msg.payload);
-        console.log('requestNostroTopUp message:', message);
-        console.log('msg:', msg);
         if(message.indexOf('response|topup') >= 0 && msg.from != myId){
           filter.stopWatching();
           var messageArr = message.split('|');
@@ -433,22 +412,15 @@ function requestNostroTopUp(cb){
               contractInstance.approveAndCall.getData(usdzarContract.address, token1Amount, '');
             var gas = web3.eth.estimateGas({data: callData});
             setTimeout(function(){
-              console.log('calling approve and call:');
-              console.log('active contract address:', contractList[activeContractNr].address);
-              console.log('usdzarContract.address:', usdzarContract.address);
-              console.log('token1Amount:', token1Amount);
-              console.log('approver:', web3.eth.accounts[0]);
-              console.log('counterparties:', counterparties);
               contractInstance.approveAndCall(usdzarContract.address, token1Amount, ''
               , {from: web3.eth.accounts[0], gas: gas+3000000, privateFor: counterparties} 
               , function(err, txHash){
                 if(err){console.log('ERROR:', err)}
-                console.log('Tx hash:', txHash);
                 contractSubMenu(function(res){
                   cb(res);
                 });
               });
-            }, 5000);
+            }, 2000);
           });
         }
       });

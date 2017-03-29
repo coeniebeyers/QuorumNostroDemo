@@ -63,6 +63,7 @@ function startAddressBookListeners(){
           var contact = contactList[j];
           if(contact && contact.address == newContact.address){
             found = true;
+            contacts.name = newContact.name;
             break; 
           }
         }
@@ -101,6 +102,24 @@ function createNewAccount(cb){
         });
       });
     });
+  });
+}
+
+function setAccountName(cb){
+  prompt.get(['accountAddress', 'accountName'], function(err, o){
+    var found = false;
+    for(var accountAddress in accountMapping){
+      if(o.accountAddress == accountAddress){
+        found = true;
+        accountMapping[accountAddress] = o.accountName; 
+      }
+    }
+    if(!found){
+      console.log('Address not found:', o.accountAddress);
+    }
+    listAccounts(function(res){
+      cb(res); 
+    })
   });
 }
 
@@ -151,8 +170,9 @@ function unlockAllAccounts(){
 
 function addressBookSubMenu(cb){
   console.log('1) Create new account');
-  console.log('2) List accounts');
-  console.log('3) List contacts in address book');
+  console.log('2) Set account name');
+  console.log('3) List accounts');
+  console.log('4) List contacts in address book');
   console.log('0) Return to main menu');
   prompt.get(['option'], function (err, o) {
     if(o && o.option == 1){
@@ -162,12 +182,18 @@ function addressBookSubMenu(cb){
         });
       }); 
     } else if(o && o.option == 2){
-      listAccounts(function(){
+      setAccountName(function(){
         addressBookSubMenu(function(res){
           cb(res);
         });
       }); 
     } else if(o && o.option == 3){
+      listAccounts(function(){
+        addressBookSubMenu(function(res){
+          cb(res);
+        });
+      }); 
+    } else if(o && o.option == 4){
       listAddressBookContacts(function(){
         addressBookSubMenu(function(res){
           cb(res);

@@ -358,7 +358,7 @@ function displayAvailableCurrencyContracts(cb){
 
 function changeActiveCurrencyContract(cb){
   console.log('Please select a contract to make active');
-  displayAvailableCurrencyContractsContracts(function(){
+  displayAvailableCurrencyContracts(function(){
     console.log('---');
     prompt.get(['contractNr'], function (err, o) {
       var selectedNr = Number(o.contractNr);

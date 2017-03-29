@@ -63,7 +63,7 @@ function startAddressBookListeners(){
           var contact = contactList[j];
           if(contact && contact.address == newContact.address){
             found = true;
-            contacts.name = newContact.name;
+            contact.name = newContact.name;
             break; 
           }
         }

@@ -562,7 +562,7 @@ function contractSubMenu(cb){
         });
       });      
     } else if(o && o.option == 7){
-      if(forexContractList.length == 0){
+      if(forexContractList.length > 0){
         requestNostroTopUp(function(res){
           contractSubMenu(function(res){
             cb(res);

@@ -4,7 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "eject": "react-scripts eject",
+    "test": "react-scripts test"
   },
   "repository": {
     "type": "git",
@@ -16,10 +19,20 @@
     "url": "https://github.com/coeniebeyers/QuorumNostroDemo/issues"
   },
   "homepage": "https://github.com/coeniebeyers/QuorumNostroDemo#readme",
+  "devDependencies": {
+    "enzyme": "^2.4.1",
+    "react-addons-test-utils": "^15.3.0",
+    "react-scripts": "0.7.0"
+  },
   "dependencies": {
     "async": "^2.2.0",
     "prompt": "^1.0.0",
+    "react": "^15.3.0",
+    "react-dom": "^15.3.0",
+    "react-redux": "^5.0.3",
+    "redux": "^3.6.0",
     "web3": "^0.18.2",
-    "web3_ipc": "^1.4.0"
+    "web3_ipc": "^1.4.0",
+    "webpack": "^2.3.2"
   }
 }

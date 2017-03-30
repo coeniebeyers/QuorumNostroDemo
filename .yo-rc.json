@@ -1,0 +1,9 @@
+{
+  "generator-react-webpack": {
+    "appName": "quorum-nostro-demo",
+    "style": "css",
+    "cssmodules": true,
+    "postcss": false,
+    "generatedWithVersion": 4
+  }
+}

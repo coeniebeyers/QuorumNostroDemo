@@ -4,7 +4,7 @@ const todo = (state, action) => {
       return {
         id: action.id,
         text: action.text,
-        completed: false
+        active: false
       }
     case 'TOGGLE_TODO':
       if (state.id !== action.id) {
@@ -13,7 +13,7 @@ const todo = (state, action) => {
 
       return {
         ...state,
-        completed: !state.completed
+        active: !state.active
       }
     default:
       return state

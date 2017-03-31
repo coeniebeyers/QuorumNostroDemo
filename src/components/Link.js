@@ -3,18 +3,17 @@ import React, { PropTypes } from 'react'
 const Link = ({ active, children, onClick }) => {
   if (active) {
     return <span>{children}</span>
-  }
-
-  return (
-    <a href="#"
-       onClick={e => {
-         e.preventDefault()
-         onClick()
-       }}
-    >
-      {children}
+  } else {
+    let link = <a href="#" 
+      onClick={
+        e => { 
+          e.preventDefault() 
+          onClick() 
+        }
+      } > {children} 
     </a>
-  )
+    return link; 
+  }
 }
 
 Link.propTypes = {

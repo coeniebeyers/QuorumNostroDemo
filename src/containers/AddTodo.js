@@ -3,7 +3,8 @@ import { connect } from 'react-redux'
 import { addTodo } from '../actions'
 
 let AddTodo = ({ dispatch }) => {
-  let input
+  let input = null;
+  let input2 = null;
 
   return (
     <div>
@@ -12,14 +13,23 @@ let AddTodo = ({ dispatch }) => {
         if (!input.value.trim()) {
           return
         }
-        dispatch(addTodo(input.value))
+        if (!input2.value.trim()) {
+          return
+        }
+        dispatch(addTodo(input.value +' | '+ input2.value))
         input.value = ''
+        input2.value = ''
       }}>
-        <input ref={node => {
+        Bank name: <input ref={node => {
           input = node
         }} />
+        <br />
+        Currency pair: <input ref={node => {
+          input2 = node
+        }} />
+        <br />
         <button type="submit">
-          Add Todo
+          Add Nostro Agreement
         </button>
       </form>
     </div>

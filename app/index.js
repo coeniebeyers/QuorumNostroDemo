@@ -1,5 +1,3 @@
-var prompt = require('prompt');
-
 var Web3 = require('web3');
 var web3 = new Web3();
 web3.setProvider(new web3.providers.HttpProvider('http://localhost:20010'));
@@ -34,8 +32,6 @@ var activeCurrencyContractNr = 0;
 
 var forexContractList = [];
 var activeForexContractNr = 0;
-
-prompt.start();
 
 function startConstellationListeners(){
   web3.shh.filter({"topics":["Constellation"]}).watch(function(err, msg) {
@@ -127,7 +123,6 @@ function startForexContractListeners(){
   });
 }
 
-
 function requestConstellationKeys(){
   var message = 'request|publicKey';
   var hexString = new Buffer(message).toString('hex');
@@ -139,24 +134,6 @@ function requestConstellationKeys(){
     "workToProve": 1
   }, function(err, res){
     if(err){console.log('err', err);}
-  });
-}
-
-function displayConstellationKeys(cb){
-  var i = 1;
-  for(var id in constellationNodes){
-    var constellationKey = constellationNodes[id];
-    var name = nodeNames[id];
-    console.log(i+') '+name +' | '+ constellationKey);
-    i++;
-  }
-  cb();
-}
-
-function setNodeName(cb){
-  prompt.get(['name'], function(err, node){
-    nodeIdentityName = node.name;
-    cb();
   });
 }
 
@@ -232,19 +209,6 @@ function broadcastCurrencyContractToCounterparties(counterparties, contract, cb)
   });
 }
 
-function getNodesToShareWith(selectedNumbers, cb){
-  prompt.get(['number'], function(err, p){
-    if(p.number == 0){
-      cb();
-    } else {
-      selectedNumbers.push(p.number);
-      getNodesToShareWith(selectedNumbers, function(res){
-        cb(res);
-      });
-    }
-  });
-}
-
 // TODO: housekeeping!!!
 function deployPrivateContract(cb){
   console.log('Select whom to include in this contract.'); 
@@ -279,28 +243,6 @@ function deployPrivateContract(cb){
   });
 }
 
-function balanceOf(contractInstance, cb){
-  prompt.get(['address'], function (err, o) {
-    contractInstance.balanceOf(o.address, function(err, balance){
-      if(err){console.log('ERROR:', err)}
-      cb(balance.toString());
-    });
-  });
-}
-
-function transfer(contractInstance, counterparties, cb){
-  web3.eth.defaultAccount = web3.eth.accounts[0];
-  prompt.get(['toAddress', 'amount'], function (err, o) {
-    var callData = contractInstance.transfer.getData(o.toAddress, Number(o.amount));
-    var gas = web3.eth.estimateGas({data: callData});
-    contractInstance.transfer(o.toAddress, Number(o.amount), {from: web3.eth.accounts[0], gas: gas, privateFor: counterparties} 
-    , function(err, txHash){
-      if(err){console.log('ERROR:', err)}
-      cb(txHash);
-    });
-  });
-}
-
 // TODO: this can be cleaned up but shouldn't be a problem until we hit many nodes/counterparties
 function resolveCounterpartyNames(counterparties){
   var counterpartyNames = [];
@@ -320,56 +262,6 @@ function resolveCounterpartyNames(counterparties){
     } 
   }
   return counterpartyNames;
-}
-
-function displayAvailableForexContracts(cb){
-  for(var i in forexContractList){
-    var contract = forexContractList[i];
-    var counterpartyNames = resolveCounterpartyNames(contract.counterparties);
-    console.log(i+') '+new Date(contract.timestamp) + ' | '+ counterpartyNames);
-  }
-  cb();
-}
-
-function changeActiveForexContract(cb){
-  console.log('Please select a contract to make active');
-  displayAvailableForexContracts(function(){
-    console.log('---');
-    prompt.get(['contractNr'], function (err, o) {
-      var selectedNr = Number(o.contractNr);
-      if(selectedNr < forexContractList.length){
-        activeForexContractNr = selectedNr;
-      } else {
-        console.log('Nr too high! Select a number below:', forexContractList.length);
-      }
-      cb();
-    });
-  });
-}
-
-function displayAvailableCurrencyContracts(cb){
-  for(var i in currencyContractList){
-    var contract = currencyContractList[i];
-    var counterpartyNames = resolveCounterpartyNames(contract.counterparties);
-    console.log(i+') '+new Date(contract.timestamp) + ' | '+ counterpartyNames);
-  }
-  cb();
-}
-
-function changeActiveCurrencyContract(cb){
-  console.log('Please select a contract to make active');
-  displayAvailableCurrencyContracts(function(){
-    console.log('---');
-    prompt.get(['contractNr'], function (err, o) {
-      var selectedNr = Number(o.contractNr);
-      if(selectedNr < currencyContractList.length){
-        activeCurrencyContractNr = selectedNr;
-      } else {
-        console.log('Nr too high! Select a number below:', currencyContractList.length);
-      }
-      cb();
-    });
-  });
 }
 
 function deployUSDZARContract(cb){
@@ -440,183 +332,53 @@ function startNostroAccountManagementListeners(){
 }
 
 function requestNostroTopUp(cb){
-  prompt.get(['amount'], function(err, o){
-    var token2Amount = Number(o.amount); // token2, USD Amount
-    var message = 'request|topup|'+token2Amount;
-    message += '|'+web3.eth.accounts[0]; // The account which to topup with token2, USD
-    message += '|'+currencyContractList[activeCurrencyContractNr].address; // Address of token1, ZAR
-    var hexString = new Buffer(message).toString('hex');
-    web3.shh.post({
-      "topics": ["NostroAccountManagement"],
-      "from": myId,
-      "payload": hexString,
-      "ttl": 10,
-      "workToProve": 1
-    }, function(err, res){
-      if(err){console.log('err', err);}
-      var filter = web3.shh.filter({"topics":["NostroAccountManagement"]}).watch(function(err, msg) {
-        if(err){console.log("ERROR:", err);};
-        var message = util.Hex2a(msg.payload);
-        if(message.indexOf('response|topup') >= 0 && msg.from != myId){
-          filter.stopWatching();
-          var messageArr = message.split('|');
-          // TODO: approverAddress doesn't seem to be used anywhere
-          var approverAddress = messageArr[2]; // US Bank ZAR account
-          //TODO: possible race condition if other party hasn't approved everything yet
-          var contractInstance = currencyContractList[activeCurrencyContractNr].contractInstance;
-          var counterparties = currencyContractList[activeCurrencyContractNr].counterparties.slice();
-          util.GetThisNodesConstellationPubKey(function(constellationKey){
-            while(counterparties.indexOf(constellationKey) >= 0){
-              counterparties.splice(counterparties.indexOf(constellationKey), 1);
-            }
-            var token1Amount = Math.round(token2Amount*10);
-            var activeForexContract = forexContractList[activeForexContractNr];
-            var callData = 
-              contractInstance.approveAndCall.getData(activeForexContract.address, token1Amount, '');
-            var gas = web3.eth.estimateGas({data: callData});
-            setTimeout(function(){
-              contractInstance.approveAndCall(activeForexContract.address, token1Amount, ''
-              , {from: web3.eth.accounts[0], gas: gas+3000000, privateFor: counterparties} 
-              , function(err, txHash){
-                if(err){console.log('ERROR:', err)}
-                contractSubMenu(function(res){
-                  cb(res);
-                });
+  var token2Amount = Number(o.amount); // token2, USD Amount
+  var message = 'request|topup|'+token2Amount;
+  message += '|'+web3.eth.accounts[0]; // The account which to topup with token2, USD
+  message += '|'+currencyContractList[activeCurrencyContractNr].address; // Address of token1, ZAR
+  var hexString = new Buffer(message).toString('hex');
+  web3.shh.post({
+    "topics": ["NostroAccountManagement"],
+    "from": myId,
+    "payload": hexString,
+    "ttl": 10,
+    "workToProve": 1
+  }, function(err, res){
+    if(err){console.log('err', err);}
+    var filter = web3.shh.filter({"topics":["NostroAccountManagement"]}).watch(function(err, msg) {
+      if(err){console.log("ERROR:", err);};
+      var message = util.Hex2a(msg.payload);
+      if(message.indexOf('response|topup') >= 0 && msg.from != myId){
+        filter.stopWatching();
+        var messageArr = message.split('|');
+        // TODO: approverAddress doesn't seem to be used anywhere
+        var approverAddress = messageArr[2]; // US Bank ZAR account
+        //TODO: possible race condition if other party hasn't approved everything yet
+        var contractInstance = currencyContractList[activeCurrencyContractNr].contractInstance;
+        var counterparties = currencyContractList[activeCurrencyContractNr].counterparties.slice();
+        util.GetThisNodesConstellationPubKey(function(constellationKey){
+          while(counterparties.indexOf(constellationKey) >= 0){
+            counterparties.splice(counterparties.indexOf(constellationKey), 1);
+          }
+          var token1Amount = Math.round(token2Amount*10);
+          var activeForexContract = forexContractList[activeForexContractNr];
+          var callData = 
+            contractInstance.approveAndCall.getData(activeForexContract.address, token1Amount, '');
+          var gas = web3.eth.estimateGas({data: callData});
+          setTimeout(function(){
+            contractInstance.approveAndCall(activeForexContract.address, token1Amount, ''
+            , {from: web3.eth.accounts[0], gas: gas+3000000, privateFor: counterparties} 
+            , function(err, txHash){
+              if(err){console.log('ERROR:', err)}
+              contractSubMenu(function(res){
+                cb(res);
               });
-            }, 2000);
-          });
-        }
-      });
-    });  
-  });
-}
-
-function viewAllowances(cb){
-  prompt.get(["approver", "approved"], function(err, o){
-    var contractInstance = currencyContractList[activeCurrencyContractNr].contractInstance;
-    contractInstance.allowance(o.approver, o.approved, function(err, amount){
-      if(err){console.log('ERROR:', err)}
-      console.log('Allowance:', amount.toString());
-
-      contractSubMenu(function(res){
-        cb(res);
-      });
-    });
-  });
-}
-
-function contractSubMenu(cb){
-  console.log('1) Deploy currency contract');
-  console.log('2) Deploy USDZAR contract');
-  console.log('3) View address balance');
-  console.log('4) Transfer amount to address');
-  console.log('5) Change active Currency contract');
-  console.log('6) Change active Forex contract');
-  console.log('7) Request Nostro topup');
-  console.log('0) Return to main menu');
-  prompt.get(['option'], function (err, o) {
-    if(o && o.option == 1){
-      deployPrivateContract(function(){
-        contractSubMenu(function(res){
-          cb(res);
-        });
-      }); 
-    } else if(o && o.option == 2){
-      deployUSDZARContract(function(){
-        contractSubMenu(function(res){
-          cb(res);
-        });
-      }); 
-    } else if(o && o.option == 3){
-      var contractInstance = currencyContractList[activeCurrencyContractNr].contractInstance;
-      balanceOf(contractInstance, function(res){
-        console.log('Balance:', res);
-        contractSubMenu(function(res){
-          cb(res);
-        });
-      });      
-    } else if(o && o.option == 4){
-      var contractInstance = currencyContractList[activeCurrencyContractNr].contractInstance;
-      var counterparties = currencyContractList[activeCurrencyContractNr].counterparties.slice();
-      util.GetThisNodesConstellationPubKey(function(constellationKey){
-        while(counterparties.indexOf(constellationKey) >= 0){
-          counterparties.splice(counterparties.indexOf(constellationKey), 1);
-        }
-        transfer(contractInstance, counterparties, function(res){
-          console.log('Tx hash:', res);
-          contractSubMenu(function(res){
-            cb(res);
-          });
-        });      
-      });
-    } else if(o && o.option == 5){
-      changeActiveCurrencyContract(function(res){
-        contractSubMenu(function(res){
-          cb(res);
-        });
-      });      
-    } else if(o && o.option == 6){
-      changeActiveForexContract(function(res){
-        contractSubMenu(function(res){
-          cb(res);
-        });
-      });      
-    } else if(o && o.option == 7){
-      if(forexContractList.length > 0){
-        requestNostroTopUp(function(res){
-          contractSubMenu(function(res){
-            cb(res);
-          });
-        });
-      } else {
-        console.log('\nERROR: First deploy the USDZAR contract\n');
-        contractSubMenu(function(res){
-          cb(res);
+            });
+          }, 2000);
         });
       }
-    } else if(o && o.option == 0){
-      cb();
-      return;
-    } else {
-      contractSubMenu(function(res){
-        cb(res);
-      });
-    }
-  });
-}
-
-function menu(){
-  console.log('1) Set node name');
-  console.log('2) Display known constellation nodes');
-  console.log('3) Contracts submenu');
-  console.log('4) Address book submenu');
-  console.log('0) Quit');
-  prompt.get(['option'], function (err, o) {
-    if(o.option == 1){
-      setNodeName(function(){
-        menu();
-      });       
-    } else if(o.option == 2){
-      displayConstellationKeys(function(){
-        console.log('-');
-        menu();
-      }); 
-    } else if(o.option == 3){
-      contractSubMenu(function(res){
-        menu();
-      });
-    } else if(o.option == 4){
-      addressBook.SubMenu(function(res){
-        menu();
-      });
-    } else if(o.option == 0){
-      console.log('Quiting');
-      process.exit(0);
-      return;
-    } else {
-      menu();
-    }
-  });
+    });
+  });  
 }
 
 startConstellationListeners();
@@ -638,7 +400,3 @@ setInterval(function(){
   requestNodeNames();
   requestConstellationKeys();
 }, 1*1000);
-
-setTimeout(function(){
-  menu();
-}, 2000);

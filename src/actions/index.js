@@ -46,8 +46,7 @@ export function addAccount(accountName){
     fetch("http://localhost:4000/getNewAccountAddress")
     .then(response => response.json())
     .then(json => {
-      var address = json.address
-      dispatch(receiveNewAccount(accountName, address));
+      dispatch(receiveNewAccount(accountName, json.address));
     })
   }
 }

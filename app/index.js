@@ -4,7 +4,7 @@ web3.setProvider(new web3.providers.HttpProvider('http://localhost:20010'));
 
 var Web3IPC = require('web3_ipc');
 var options = {
-  host: '../QuorumNetworkManager/Blockchain/geth.ipc',
+  host: '../../QuorumNetworkManager/Blockchain/geth.ipc',
   ipc: true,
   personal: true,
   admin: true,
@@ -12,7 +12,6 @@ var options = {
 };
 var web3IPC = Web3IPC.create(options);
 
-// TODO: Add check that we are receiving valid from addresses
 var myId = web3.shh.newIdentity();
 
 var util = require('./util.js');

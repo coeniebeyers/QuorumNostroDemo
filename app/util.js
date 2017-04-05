@@ -10,7 +10,7 @@ function hex2a(hexx) {
 }
 
 function getThisNodesConstellationPubKey(cb){
-  fs.readFile('../QuorumNetworkManager/Constellation/node.pub', function read(err, data) {
+  fs.readFile('../../QuorumNetworkManager/Constellation/node.pub', function read(err, data) {
     if (err) { console.log('ERROR:', err); }
     var publicKey = new Buffer(data).toString();
     cb(publicKey); 

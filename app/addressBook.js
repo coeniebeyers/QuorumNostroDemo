@@ -1,4 +1,3 @@
-var prompt = require('prompt');
 var async = require('async');
 
 var util = require('./util.js');
@@ -11,8 +10,6 @@ var web3IPC = null;
 var contactList = [];
 var accountMapping = {};
 var myId = null;
-
-prompt.start();
 
 function setWeb3(_web3){
   web3 = _web3;
@@ -90,7 +87,7 @@ function getAccountsFromOtherNodes(){
 }
 
 function createNewAccount(cb){
-  prompt.get(['accountName'], function(err, o){
+  //prompt.get(['accountName'], function(err, o){
     web3IPC.personal.newAccount(defaultPassword, function(err, account){
       if(err){console.log('ERROR:', err)}
       accountMapping[account] = o.accountName;
@@ -102,37 +99,7 @@ function createNewAccount(cb){
         });
       });
     });
-  });
-}
-
-function setAccountName(cb){
-  prompt.get(['accountAddress', 'accountName'], function(err, o){
-    var found = false;
-    for(var accountAddress in accountMapping){
-      if(o.accountAddress == accountAddress){
-        found = true;
-        accountMapping[accountAddress] = o.accountName; 
-      }
-    }
-    if(!found){
-      console.log('Address not found:', o.accountAddress);
-    }
-    listAccounts(function(res){
-      cb(res); 
-    })
-  });
-}
-
-// TODO: add option to add a label/alias to an account
-function listAccounts(cb){
-  console.log('Account address                            | Account name');
-  console.log('-------------------------------------------|----------------');
-  for(var accountAddress in accountMapping){
-    var accountName = accountMapping[accountAddress];
-    console.log(accountAddress+' | '+accountName);
-  }
-  console.log('-------------------------------------------|----------------');
-  cb();
+  //});
 }
 
 // TODO: in the future this should load from a DB/textfile
@@ -141,18 +108,6 @@ function loadAllNodeAccounts(){
     accountMapping[web3.eth.accounts[i]] = defaultAccountName; 
   }
 }
-
-function listAddressBookContacts(cb){
-  console.log('Account address \t\t\t   | Constellation Key \t\t\t\t| Account name');
-  console.log('-');
-  for(var i in contactList){
-    var contact = contactList[i];
-    console.log(contact.address+' | '+contact.constellationKey+' | '+contact.name);
-  }
-  console.log('-');
-  cb();
-}
-
 function unlockAllAccounts(){
   console.log('[INFO] Unlocking all accounts ...');
   async.each(web3.eth.accounts, function(account, callback){
@@ -168,49 +123,6 @@ function unlockAllAccounts(){
   }); 
 }
 
-function addressBookSubMenu(cb){
-  console.log('1) Create new account');
-  console.log('2) Set account name');
-  console.log('3) List accounts');
-  console.log('4) List contacts in address book');
-  console.log('0) Return to main menu');
-  prompt.get(['option'], function (err, o) {
-    if(o && o.option == 1){
-      createNewAccount(function(){
-        addressBookSubMenu(function(res){
-          cb(res);
-        });
-      }); 
-    } else if(o && o.option == 2){
-      setAccountName(function(){
-        addressBookSubMenu(function(res){
-          cb(res);
-        });
-      }); 
-    } else if(o && o.option == 3){
-      listAccounts(function(){
-        addressBookSubMenu(function(res){
-          cb(res);
-        });
-      }); 
-    } else if(o && o.option == 4){
-      listAddressBookContacts(function(){
-        addressBookSubMenu(function(res){
-          cb(res);
-        });
-      }); 
-    } else if(o && o.option == 0){
-      cb();
-      return;
-    } else {
-      contractSubMenu(function(res){
-        cb(res);
-      });
-    }
-  });
-}
-
-exports.SubMenu = addressBookSubMenu;
 exports.GetAccountsFromOtherNodes = getAccountsFromOtherNodes;
 exports.StartListeners = startAddressBookListeners;
 exports.SetWeb3 = setWeb3;

@@ -1,6 +1,5 @@
-var Web3 = require('web3');
-var web3 = new Web3();
-web3.setProvider(new web3.providers.HttpProvider('http://localhost:20010'));
+require('es6-promise').polyfill();
+import fetch from 'isomorphic-fetch'
 
 let nextTodoId = 0
 export const addTodo = (text) => ({
@@ -28,11 +27,7 @@ function requestNewAccount(accountName) {
 }
 
 export const RECEIVE_NEW_ACCOUNT = 'RECEIVE_NEW_ACCOUNT'
-function receiveNewAccount(accountName, accountAddressList) {
-  var accountAddress = 'N/A';
-  if(nextAccountId < accountAddressList.length){
-    accountAddress = accountAddressList[nextAccountId];
-  }
+function receiveNewAccount(accountName, accountAddress) {
   console.log('accountName:', accountName);
   console.log('accountAddress:', accountAddress);
   return {
@@ -47,10 +42,12 @@ export function addAccount(accountName){
   return function(dispatch) {
 
     dispatch(requestNewAccount(accountName));
-
-    web3.eth.getAccounts(function(err, accountAddressList){
-      if(err){console.log('ERROR:', err);}
-      dispatch(receiveNewAccount(accountName, accountAddressList));
+  
+    fetch("http://localhost:4000/getNewAccountAddress")
+    .then(response => response.json())
+    .then(json => {
+      var address = json.address
+      dispatch(receiveNewAccount(accountName, address));
     })
   }
 }

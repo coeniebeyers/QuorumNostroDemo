@@ -16,10 +16,12 @@ api.use(function(req, res, next) {
 
 // TODO: think about authentication, passing an account password (hash?) etc
 api.get('/getNewAccountAddress', function(req, res) {
-  var obj = {
-    address: '0x12345'
-  }
-  res.send(JSON.stringify(obj));
+  app.CreateNewAccount(function(account){
+    var obj = {
+      address: account.address
+    }
+    res.send(JSON.stringify(obj));
+  });
 });
 
 let port = 4000;

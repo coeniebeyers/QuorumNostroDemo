@@ -399,3 +399,5 @@ setInterval(function(){
   requestNodeNames();
   requestConstellationKeys();
 }, 1*1000);
+
+exports.CreateNewAccount = addressBook.CreateNewAccount;

@@ -87,19 +87,16 @@ function getAccountsFromOtherNodes(){
 }
 
 function createNewAccount(cb){
-  //prompt.get(['accountName'], function(err, o){
-    web3IPC.personal.newAccount(defaultPassword, function(err, account){
+  web3IPC.personal.newAccount(defaultPassword, function(err, address){
+    if(err){console.log('ERROR:', err)}
+    web3IPC.personal.unlockAccount(
+    address, defaultPassword, unlockDuration, function(err, res){
       if(err){console.log('ERROR:', err)}
-      accountMapping[account] = o.accountName;
-      web3IPC.personal.unlockAccount(account, defaultPassword, unlockDuration, function(err, res){
-        if(err){console.log('ERROR:', err)}
-        cb({
-          accountAddress: account,
-          accountName: o.accountName
-        });
+      cb({
+        address: address,
       });
     });
-  //});
+  });
 }
 
 // TODO: in the future this should load from a DB/textfile
@@ -123,12 +120,13 @@ function unlockAllAccounts(){
   }); 
 }
 
-exports.GetAccountsFromOtherNodes = getAccountsFromOtherNodes;
-exports.StartListeners = startAddressBookListeners;
 exports.SetWeb3 = setWeb3;
 exports.SetWeb3IPC = setWeb3IPC;
+exports.SetWhisperId = setWhisperId;
+exports.GetAccountsFromOtherNodes = getAccountsFromOtherNodes;
+exports.StartListeners = startAddressBookListeners;
 exports.ContactList = contactList;
 exports.AccountMapping = accountMapping;
 exports.UnlockAllAccounts = unlockAllAccounts;
 exports.LoadAllNodeAccounts = loadAllNodeAccounts;
-exports.SetWhisperId = setWhisperId;
+exports.CreateNewAccount = createNewAccount;

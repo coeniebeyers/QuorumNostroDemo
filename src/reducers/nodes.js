@@ -3,8 +3,8 @@ const node = (state, action) => {
     case 'RECEIVE_NODES':
       return {
         id: action.id,
-        constellationAddress: action.node.constellationAddress,
-        name: action.node.name,
+        constellationAddress: action.constellationAddress,
+        name: action.name
       }
     default:
       return state
@@ -17,7 +17,7 @@ const nodeList = (state = [], action) => {
       let found = false
       for(let i = 0; i < state.length; i++){
         let constellationAddress = state[i].constellationAddress
-        if(constellationAddress === action.node.constellationAddress){
+        if(constellationAddress === action.constellationAddress){
           found = true
           break
         }

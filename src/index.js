@@ -4,7 +4,9 @@ import { render } from 'react-dom'
 import { createStore, applyMiddleware, compose } from 'redux'
 import { Provider } from 'react-redux'
 import { HashRouter, Route } from 'react-router-dom';
-import App from './components/App'
+import AddressBook from './components/AddressBook'
+import Counterparties from './components/Counterparties'
+import Contracts from './components/Contracts'
 import reducer from './reducers'
 import { pollNewNodes } from './actions'
 
@@ -25,8 +27,11 @@ render(
 	<Provider store={store}>
 		<HashRouter>
 			<div>
-				<Route exact path="/" component={App} />
-				<Route path="/home" component={App} />
+				<Route exact path="/" component={AddressBook} />
+				<Route path="/home" component={AddressBook} />
+				<Route path="/address" component={AddressBook} />
+				<Route path="/counterparties" component={Counterparties} />
+				<Route path="/contract" component={Contracts} />
 			</div>
 		</HashRouter>
 	</Provider>,

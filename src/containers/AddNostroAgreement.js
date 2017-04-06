@@ -1,8 +1,8 @@
 import React from 'react'
 import { connect } from 'react-redux'
-import { addContract } from '../actions'
+import { addNostroAgreement } from '../actions'
 
-let AddContract = ({ dispatch }) => {
+let AddNostroAgreement = ({ dispatch }) => {
   let input = null;
   let input2 = null;
 
@@ -16,7 +16,7 @@ let AddContract = ({ dispatch }) => {
         if (!input2.value.trim()) {
           return
         }
-        dispatch(addContract(input.value +' | '+ input2.value))
+        dispatch(addNostroAgreement(input.value +' | '+ input2.value))
         input.value = ''
         input2.value = ''
       }}>
@@ -35,6 +35,6 @@ let AddContract = ({ dispatch }) => {
     </div>
   )
 }
-AddContract = connect()(AddContract)
+AddNostroAgreement = connect()(AddNostroAgreement)
 
-export default AddContract
+export default AddNostroAgreement

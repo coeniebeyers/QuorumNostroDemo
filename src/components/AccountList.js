@@ -14,8 +14,7 @@ const AccountList = ({ accountList }) => (
 
 AccountList.propTypes = {
   accountList: PropTypes.arrayOf(PropTypes.shape({
-    id: PropTypes.number.isRequired,
-    accountName: PropTypes.string.isRequired
+    id: PropTypes.number.isRequired
   }).isRequired).isRequired
 }
 

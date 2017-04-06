@@ -1,14 +1,14 @@
 import React from 'react'
-import AddContract from '../containers/AddContract'
-import ContractList from '../containers/ContractList'
+import AddNostroAgreement from '../containers/AddNostroAgreement'
+import NostroAgreementList from '../containers/NostroAgreementList'
 import NavBar from '../components/NavBar'
 
-const Contracts = () => (
+const NostroAgreements = () => (
   <div>
     <NavBar />
-    <AddContract />
-    <ContractList />
+    <AddNostroAgreement />
+    <NostroAgreementList />
   </div>
 )
 
-export default Contracts
+export default NostroAgreements

@@ -21,7 +21,7 @@ const store = createStore(
 
 setInterval(function(){
   store.dispatch(pollNewNodes())
-}, 1000)
+}, 5000)
 
 render(
 	<Provider store={store}>

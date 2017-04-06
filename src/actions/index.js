@@ -67,36 +67,33 @@ export function pollNewNodes(){
   }
 }
 
-let nextContractId = 0;
-export const REQUEST_NEW_CONTRACT = 'REQUEST_NEW_CONTRACT'
-function requestNewContract(contractName) {
+let nextNostroAgreementId = 0;
+export const REQUEST_NEW_NOSTROAGREEMENT = 'REQUEST_NEW_NOSTROAGREEMENT'
+function requestNewNostroAgreement() {
   return {
-    type: REQUEST_NEW_CONTRACT
+    type: REQUEST_NEW_NOSTROAGREEMENT
   }
 }
 
-export const RECEIVE_NEW_CONTRACT = 'RECEIVE_NEW_CONTRACT'
-function receiveNewContract(contractName, contractAddress) {
-  console.log('contractName:', contractName);
-  console.log('contractAddress:', contractAddress);
+export const RECEIVE_NEW_NOSTROAGREEMENT = 'RECEIVE_NEW_NOSTROAGREEMENT'
+function receiveNewNostroAgreement(nostroAgreement) {
+  console.log('nostroAgreement:', nostroAgreement);
   return {
-    type: RECEIVE_NEW_CONTRACT,
-    id: nextContractId++,
-    contractName,
-    contractAddress
+    type: RECEIVE_NEW_NOSTROAGREEMENT,
+    id: nextNostroAgreementId++,
+    nostroAgreement
   }
 }
 
-export function addContract(contractName){
+export function addNostroAgreement(nostroAgreementDetails){
   return function(dispatch) {
 
-    dispatch(requestNewContract(contractName));
-  
-    fetch("http://localhost:4000/getNewContractAddress")
+    dispatch(requestNewNostroAgreement())
+    // TODO: pass nostroAgreementDetails to the api
+    fetch("http://localhost:4000/deployNewNostroAgreement")
     .then(response => response.json())
-    .then(json => {
-      var address = json.address
-      dispatch(receiveNewContract(contractName, address));
+    .then(nostroAgreement => {
+      dispatch(receiveNewNostroAgreement(nostroAgreement));
     })
   }
 }

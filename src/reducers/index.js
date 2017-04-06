@@ -1,14 +1,14 @@
 import { combineReducers } from 'redux'
-import todos from './todos'
+import nostroAgreements from './nostroAgreements'
 import visibilityFilter from './visibilityFilter'
 import accountList from './accounts'
 import nodeList from './nodes'
 
 const todoApp = combineReducers({
-  todos,
   visibilityFilter,
   accountList,
-  nodeList
+  nodeList,
+  nostroAgreements
 })
 
 export default todoApp

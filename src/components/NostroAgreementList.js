@@ -1,22 +1,21 @@
 import React, { PropTypes } from 'react'
-import Account from './Account'
+import NostroAgreement from './NostroAgreement'
 
-const AccountList = ({ accountList }) => (
+const NostroAgreementList = ({ nostroAgreementList }) => (
   <ul>
-    {accountList.map(account =>
-      <Account
-        key={account.id}
-        {...account}
+    {nostroAgreementList.map(nostroAgreement =>
+      <NostroAgreement
+        key={nostroAgreement.id}
+        {...nostroAgreement}
       />
     )}
   </ul>
 )
 
-AccountList.propTypes = {
-  accountList: PropTypes.arrayOf(PropTypes.shape({
-    id: PropTypes.number.isRequired,
-    accountName: PropTypes.string.isRequired
+NostroAgreementList.propTypes = {
+  nostroAgreementList: PropTypes.arrayOf(PropTypes.shape({
+    id: PropTypes.number.isRequired
   }).isRequired).isRequired
 }
 
-export default AccountList
+export default NostroAgreementList

@@ -1,14 +1,14 @@
 import { combineReducers } from 'redux'
 import nostroAgreementList from './nostroAgreements'
-import visibilityFilter from './visibilityFilter'
 import accountList from './accounts'
 import nodeList from './nodes'
+import loadingIndicator from './loadingIndicator'
 
-const todoApp = combineReducers({
-  visibilityFilter,
+const nostroAccountManagmentApp = combineReducers({
   accountList,
   nodeList,
-  nostroAgreementList
+  nostroAgreementList,
+	loadingIndicator
 })
 
-export default todoApp
+export default nostroAccountManagmentApp

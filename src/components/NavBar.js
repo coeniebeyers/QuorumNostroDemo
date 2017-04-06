@@ -28,8 +28,8 @@ const NavBar = props => {
 			<ul style={ul}>
 				<li style={li}><Link to='/home' style={li_a}>Home</Link></li>
 				<li style={li}><Link to='/address' style={li_a}>Address Book</Link></li>
+				<li style={li}><Link to='/nostroAgreements' style={li_a}>Nostro Agreements</Link></li>
 				<li style={li}><Link to='/counterparties' style={li_a}>Counterparties</Link></li>
-				<li style={li}><Link to='/contract' style={li_a}>Contracts</Link></li>
 				{props.children}
 			</ul>
 			<h1>Welcome to the Nostro account management demonstration</h1>

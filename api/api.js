@@ -1,6 +1,7 @@
 var express = require('express')
 var api = express()
 var app = require('../app/index.js')
+app.Start()
 
 var bodyParser = require('body-parser')
 api.use( bodyParser.json() );       // to support JSON-encoded bodies
@@ -25,10 +26,7 @@ api.get('/getNewAccountAddress', function(req, res) {
 });
 
 api.get('/getNodes', function(req, res) {
-  var nodeList = [{
-    constellationAddress: 'kjsdbgsrgkbsjlfgn==',
-    name: 'mock 1'
-  }];
+  var nodeList = app.GetNodes();
   res.send(JSON.stringify(nodeList));
 });
 

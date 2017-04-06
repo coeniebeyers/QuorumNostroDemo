@@ -32,6 +32,11 @@ var activeCurrencyContractNr = 0;
 var forexContractList = [];
 var activeForexContractNr = 0;
 
+function getNodes(){
+  var nodes = resolveCounterpartyNames(constellationNodes);
+  return nodes; 
+}
+
 function startConstellationListeners(){
   web3.shh.filter({"topics":["Constellation"]}).watch(function(err, msg) {
     if(err){console.log("ERROR:", err);};
@@ -253,7 +258,10 @@ function resolveCounterpartyNames(counterparties){
         for(var k in nodeNames){
           var nodeName = nodeNames[k];
           if(j == k){ // We've found the nodeName we are looking for
-            counterpartyNames.push(nodeName);
+            counterpartyNames.push({
+              name: nodeName,
+              constellationAddress: constellationKey
+            });
           }
         }
         break; 
@@ -380,24 +388,28 @@ function requestNostroTopUp(cb){
   });  
 }
 
-startConstellationListeners();
-startNodeNameListeners();
-startCurrencyContractListeners();
-startForexContractListeners();
-startNostroAccountManagementListeners();
+function start(){
+  startConstellationListeners();
+  startNodeNameListeners();
+  startCurrencyContractListeners();
+  startForexContractListeners();
+  startNostroAccountManagementListeners();
 
-requestNodeNames();
-requestConstellationKeys();
-
-addressBook.UnlockAllAccounts();
-addressBook.LoadAllNodeAccounts();
-addressBook.StartListeners();
-addressBook.GetAccountsFromOtherNodes();
-
-setInterval(function(){
-  addressBook.GetAccountsFromOtherNodes();
   requestNodeNames();
   requestConstellationKeys();
-}, 1*1000);
+
+  addressBook.UnlockAllAccounts();
+  addressBook.LoadAllNodeAccounts();
+  addressBook.StartListeners();
+  addressBook.GetAccountsFromOtherNodes();
+
+  setInterval(function(){
+    addressBook.GetAccountsFromOtherNodes();
+    requestNodeNames();
+    requestConstellationKeys();
+  }, 1*1000);
+}
 
 exports.CreateNewAccount = addressBook.CreateNewAccount;
+exports.Start = start;
+exports.GetNodes = getNodes;

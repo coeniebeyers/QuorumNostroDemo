@@ -6,7 +6,7 @@ import { Provider } from 'react-redux'
 import { HashRouter, Route } from 'react-router-dom';
 import AddressBook from './components/AddressBook'
 import Counterparties from './components/Counterparties'
-import Contracts from './components/Contracts'
+import NostroAgreements from './components/NostroAgreements'
 import reducer from './reducers'
 import { pollNewNodes } from './actions'
 
@@ -30,8 +30,8 @@ render(
 				<Route exact path="/" component={AddressBook} />
 				<Route path="/home" component={AddressBook} />
 				<Route path="/address" component={AddressBook} />
+				<Route path="/nostroAgreements" component={NostroAgreements} />
 				<Route path="/counterparties" component={Counterparties} />
-				<Route path="/contract" component={Contracts} />
 			</div>
 		</HashRouter>
 	</Provider>,

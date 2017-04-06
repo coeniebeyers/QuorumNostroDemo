@@ -24,6 +24,14 @@ api.get('/getNewAccountAddress', function(req, res) {
   });
 });
 
+api.get('/getNodes', function(req, res) {
+  var nodeList = [{
+    constellationAddress: 'kjsdbgsrgkbsjlfgn==',
+    name: 'mock 1'
+  }];
+  res.send(JSON.stringify(nodeList));
+});
+
 let port = 4000;
 api.listen(port, function () {
   console.log('api listening on port '+port+'!')

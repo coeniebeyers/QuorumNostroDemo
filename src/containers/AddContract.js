@@ -4,6 +4,7 @@ import { addContract } from '../actions'
 
 let AddContract = ({ dispatch }) => {
   let input = null;
+  let input2 = null;
 
   return (
     <div>
@@ -12,14 +13,23 @@ let AddContract = ({ dispatch }) => {
         if (!input.value.trim()) {
           return
         }
-        dispatch(addContract(input.value))
+        if (!input2.value.trim()) {
+          return
+        }
+        dispatch(addContract(input.value +' | '+ input2.value))
         input.value = ''
+        input2.value = ''
       }}>
-        Contract name: <input ref={node => {
+        Bank name: <input ref={node => {
           input = node
         }} />
+        <br />
+        Currency pair: <input ref={node => {
+          input2 = node
+        }} />
+        <br />
         <button type="submit">
-          Add Contract
+          Add Nostro Agreement
         </button>
       </form>
     </div>

@@ -1,23 +1,6 @@
 require('es6-promise').polyfill();
 import fetch from 'isomorphic-fetch'
 
-let nextTodoId = 0
-export const addTodo = (text) => ({
-  type: 'ADD_TODO',
-  id: nextTodoId++,
-  text
-})
-
-export const setVisibilityFilter = (filter) => ({
-  type: 'SET_VISIBILITY_FILTER',
-  filter
-})
-
-export const toggleTodo = (id) => ({
-  type: 'TOGGLE_TODO',
-  id
-})
-
 let nextAccountId = 0;
 export const REQUEST_NEW_ACCOUNT = 'REQUEST_NEW_ACCOUNT'
 function requestNewAccount(accountName) {

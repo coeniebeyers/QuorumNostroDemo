@@ -20,7 +20,7 @@ export const toggleTodo = (id) => ({
 
 let nextAccountId = 0;
 export const REQUEST_NEW_ACCOUNT = 'REQUEST_NEW_ACCOUNT'
-function requestNewAccount(accountName) {
+function requestNewAccount() {
   return {
     type: REQUEST_NEW_ACCOUNT
   }
@@ -28,8 +28,6 @@ function requestNewAccount(accountName) {
 
 export const RECEIVE_NEW_ACCOUNT = 'RECEIVE_NEW_ACCOUNT'
 function receiveNewAccount(accountName, accountAddress) {
-  console.log('accountName:', accountName);
-  console.log('accountAddress:', accountAddress);
   return {
     type: RECEIVE_NEW_ACCOUNT,
     id: nextAccountId++,
@@ -41,7 +39,7 @@ function receiveNewAccount(accountName, accountAddress) {
 export function addAccount(accountName){
   return function(dispatch) {
 
-    dispatch(requestNewAccount(accountName));
+    dispatch(requestNewAccount());
   
     fetch("http://localhost:4000/getNewAccountAddress")
     .then(response => response.json())
@@ -51,4 +49,37 @@ export function addAccount(accountName){
   }
 }
 
+
+let nextNodeId = 0;
+export const REQUEST_NODES = 'REQUEST_NODES'
+function requestNodes() {
+  return {
+    type: REQUEST_NODES
+  }
+}
+
+export const RECEIVE_NODES = 'RECEIVE_NODES'
+function receiveNodes(node) {
+  return {
+    type: RECEIVE_NODES,
+    id: nextNodeId++,
+    node
+  }
+}
+
+export function pollNewNodes(){
+  return function(dispatch) {
+
+    dispatch(requestNodes());
+  
+    fetch("http://localhost:4000/getNodes")
+    .then(response => response.json())
+    .then(nodeList => {
+      for(var i = 0; i < nodeList.length; i++){
+        var node = nodeList[i];
+        dispatch(receiveNodes(node));
+      }
+    })
+  }
+}
 

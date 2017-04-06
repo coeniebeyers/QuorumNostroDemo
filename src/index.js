@@ -6,6 +6,7 @@ import { Provider } from 'react-redux'
 import { HashRouter, Route } from 'react-router-dom';
 import App from './components/App'
 import reducer from './reducers'
+import { pollNewNodes } from './actions'
 
 const store = createStore(
   reducer,
@@ -15,6 +16,10 @@ const store = createStore(
     )
   )
 )
+
+setInterval(function(){
+  store.dispatch(pollNewNodes())
+}, 1000)
 
 render(
 	<Provider store={store}>

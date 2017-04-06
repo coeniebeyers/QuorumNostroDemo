@@ -30,6 +30,28 @@ api.get('/getNodes', function(req, res) {
   res.send(JSON.stringify(nodeList));
 });
 
+api.get('/deployNewNostroAgreement', function(req, res) {
+  var obj = {
+    currency1: {
+      address: '0x1234',
+      name: 'USD'
+    },
+    currency2: {
+      address: '0x5678',
+      name: 'ZAR'
+    },
+    counterparties: [
+      { name: 'Bank 1',
+        constellationAddress: 'skldfbsd=='
+      },
+      { name: 'Bank 2',
+        constellationAddress: 'ldfbslkgbs=='
+      }
+    ]
+  }
+  res.send(JSON.stringify(obj));
+});
+
 let port = 4000;
 api.listen(port, function () {
   console.log('api listening on port '+port+'!')

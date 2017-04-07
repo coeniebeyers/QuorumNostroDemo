@@ -31,20 +31,21 @@ api.get('/getNodes', function(req, res) {
 });
 
 api.get('/deployNewNostroAgreement', function(req, res) {
+  var details = JSON.parse(req.query.details);
   var obj = {
     currency1: {
       address: '0x1234',
-      name: 'USD'
+      name: details.currency1
     },
     currency2: {
       address: '0x5678',
-      name: 'ZAR'
+      name: details.currency2
     },
     counterparties: [
       { name: 'Bank 1',
         constellationAddress: 'skldfbsd=='
       },
-      { name: 'Bank 2',
+      { name: details.counterparty,
         constellationAddress: 'ldfbslkgbs=='
       }
     ]

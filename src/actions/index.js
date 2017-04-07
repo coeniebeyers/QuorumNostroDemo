@@ -89,8 +89,8 @@ export function addNostroAgreement(nostroAgreementDetails){
   return function(dispatch) {
 
     dispatch(requestNewNostroAgreement())
-    // TODO: pass nostroAgreementDetails to the api
-    fetch("http://localhost:4000/deployNewNostroAgreement")
+    // TODO: Add this node name
+    fetch("http://localhost:4000/deployNewNostroAgreement?details="+JSON.stringify(nostroAgreementDetails))
     .then(response => response.json())
     .then(nostroAgreement => {
       dispatch(receiveNewNostroAgreement(nostroAgreement));

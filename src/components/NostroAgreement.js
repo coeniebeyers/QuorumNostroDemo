@@ -2,10 +2,10 @@ import React, { PropTypes } from 'react'
 
 const NostroAgreement = ({ nostroAgreement }) => (
   <li > 
-    { nostroAgreement.counterparties[0].name}| 
-    { nostroAgreement.counterparties[1].name}| 
-    { nostroAgreement.currency1.name } 
-    { nostroAgreement.currency2.name } 
+    { nostroAgreement.counterpartiesToCurrency1[0].name }: &nbsp; 
+    { nostroAgreement.currency2 } | &nbsp;
+    { nostroAgreement.counterpartiesToCurrency2[0].name }: &nbsp;
+    { nostroAgreement.currency1 } 
   </li>
 )
 

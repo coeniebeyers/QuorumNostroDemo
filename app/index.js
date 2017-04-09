@@ -21,7 +21,7 @@ addressBook.SetWeb3(web3);
 addressBook.SetWeb3IPC(web3IPC);
 addressBook.SetWhisperId(myId);
 
-var nodeIdentityName = 'JPM';
+var nodeIdentityName = 'FSR';
 // TODO: rename object collections to mappings
 var constellationNodes = {};
 // TODO: rename object collections to mappings
@@ -45,12 +45,34 @@ function getNostroAgreements(){
   var list = [];
   for(var i in nostroAgreements){
     var nostroAgreement = nostroAgreements[i];
-    var counterparties1 = resolveCounterpartyNames(nostroAgreement.currency1Contract.counterparties);
-    var counterparties2 = resolveCounterpartyNames(nostroAgreement.currency2Contract.counterparties);
+    var counterparties1 = null;
+    if(nostroAgreement.currency1Contract && nostroAgreement.currency1Contract.counterparties){
+      counterparties1 = resolveCounterpartyNames(nostroAgreement.currency1Contract.counterparties);
+    } else {
+      continue;
+    }
+    var counterparties2 = null;
+    if(nostroAgreement.currency2Contract && nostroAgreement.currency2Contract.counterparties){
+      counterparties2 = resolveCounterpartyNames(nostroAgreement.currency2Contract.counterparties);
+    } else {
+      continue;
+    }
+    var currency1 = null;
+    if(nostroAgreement.currency1Contract){
+      currency1 = nostroAgreement.currency1Contract.name;
+    } else {
+      continue;
+    }
+    var currency2 = null;
+    if(nostroAgreement.currency2Contract){
+      currency2 = nostroAgreement.currency2Contract.name;
+    } else {
+      continue;
+    }
     var obj = {
-      currency1: nostroAgreement.currency1Contract.name,
+      currency1: currency1,
       counterpartiesToCurrency1: counterparties1,
-      currency2: nostroAgreement.currency2Contract.name,
+      currency2: currency2,
       counterpartiesToCurrency2: counterparties2,
       id: nostroAgreement.nostroContract.address
     }
@@ -148,7 +170,7 @@ function newNostroAgreementListener(){
       var id = messageArr[2];
       var currency2Contract = JSON.parse(messageArr[3]);
       nostroAgreements[id].currency2Contract = currency2Contract; 
-      console.log('Full nostro agreement:', nostroAgreements[id]);
+      console.log('Nostro agreement fulfilled:', id);
     }
   });
 }

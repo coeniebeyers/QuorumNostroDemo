@@ -33,25 +33,8 @@ api.get('/getNodes', function(req, res) {
 api.get('/deployNewNostroAgreement', function(req, res) {
   var details = JSON.parse(req.query.details);
   app.DeployNewNostroAgreement(details, function(nostroAgreement){
-    var obj = {
-      currency1: {
-        address: '0x1234',
-        name: details.currency1
-      },
-      currency2: {
-        address: '0x5678',
-        name: details.currency2
-      },
-      counterparties: [
-        { name: 'Bank 1',
-          constellationAddress: 'skldfbsd=='
-        },
-        { name: details.counterparty,
-          constellationAddress: 'ldfbslkgbs=='
-        }
-      ]
-    }
-    res.send(JSON.stringify(obj));
+    var nostroAgreements = app.GetNostroAgreements();
+    res.send(JSON.stringify(nostroAgreements));
   }); 
 });
 

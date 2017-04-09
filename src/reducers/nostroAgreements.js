@@ -13,10 +13,22 @@ const nostroAgreement = (state, action) => {
 const nostroAgreementList = (state = [], action) => {
   switch (action.type) {
     case 'RECEIVE_NEW_NOSTROAGREEMENT':
-      return [
-        ...state,
-        nostroAgreement(undefined, action)
-      ]
+      let found = false; 
+      for(let i = 0; i < state.length; i++){
+        let currState = state[i]
+        if(currState.nostroAgreement.id === action.nostroAgreement.id){
+          found = true
+          break
+        }
+      }
+      if(found){
+        return state
+      } else {
+        return [
+          ...state,
+          nostroAgreement(undefined, action)
+        ]
+      }
     case 'REQUEST_NEW_NOSTROAGREEMENT':
     default:
       return state

@@ -8,7 +8,7 @@ import AddressBook from './components/AddressBook'
 import Counterparties from './components/Counterparties'
 import NostroAgreements from './components/NostroAgreements'
 import reducer from './reducers'
-import { pollNewNodes } from './actions'
+import { pollNewNodes, pollNostroAgreements } from './actions'
 
 const store = createStore(
   reducer,
@@ -21,7 +21,8 @@ const store = createStore(
 
 setInterval(function(){
   store.dispatch(pollNewNodes())
-}, 5000)
+  store.dispatch(pollNostroAgreements())
+}, 1000)
 
 render(
 	<Provider store={store}>

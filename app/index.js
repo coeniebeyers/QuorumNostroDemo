@@ -21,7 +21,7 @@ addressBook.SetWeb3(web3);
 addressBook.SetWeb3IPC(web3IPC);
 addressBook.SetWhisperId(myId);
 
-var nodeIdentityName = 'unset';
+var nodeIdentityName = 'JPM';
 // TODO: rename object collections to mappings
 var constellationNodes = {};
 // TODO: rename object collections to mappings
@@ -122,7 +122,7 @@ function newNostroAgreementListener(){
       var currency2 = messageArr[2];
       var newNostroAgreement = JSON.parse(messageArr[3]); 
       nostroAgreements[newNostroAgreement.nostroContract.address] = newNostroAgreement;
-      var constellationKey = JSON.parse(messageArr[4]); 
+      var constellationKey = messageArr[4]; 
       deployCurrencyContract(web3.eth.accounts[0], currency2, [constellationKey]
       , function(currency2Contract){
         currency2Contract.name = currency2;
@@ -140,6 +140,7 @@ function newNostroAgreementListener(){
           "ttl": 10,
           "workToProve": 1
         }, function(err, res){
+          console.log('Deployed currency 2 contract!');
         });
       });
     } else if(message.indexOf('response|newNostroAgreement') >= 0 && msg.from != myId){

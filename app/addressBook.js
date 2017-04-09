@@ -4,7 +4,7 @@ var util = require('./util.js');
 
 var unlockDuration = 999999;
 var defaultPassword = '';
-var defaultAccountName = 'unset';
+var defaultAccountName = 'FSR';
 var web3 = null;
 var web3IPC = null;
 var contactList = [];

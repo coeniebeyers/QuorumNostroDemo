@@ -133,6 +133,7 @@ function newNostroAgreementListener(){
       var id = messageArr[2];
       var currency2Contract = JSON.parse(messageArr[3]);
       nostroAgreements[id].currency2Contract = currency2Contract; 
+      console.log('Full nostro agreement:', nostroAgreements[id]);
     }
   });
 }

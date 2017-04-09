@@ -1,9 +1,13 @@
 import React, { PropTypes } from 'react'
 
 const LoadingIndicator = ({ isLoading }) => (
-  <div>
-    {isLoading === "false" ? "" : "creating account on blockchain..."}
-  </div>
+  <span>
+    {
+			isLoading === "false" ? 
+				"" : 
+		  	<img src={require('./images/ajax-loader.gif')} alt="loading..." />
+		}
+  </span>
 )
 
 LoadingIndicator.propTypes = {

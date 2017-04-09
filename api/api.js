@@ -32,25 +32,32 @@ api.get('/getNodes', function(req, res) {
 
 api.get('/deployNewNostroAgreement', function(req, res) {
   var details = JSON.parse(req.query.details);
-  var obj = {
-    currency1: {
-      address: '0x1234',
-      name: details.currency1
-    },
-    currency2: {
-      address: '0x5678',
-      name: details.currency2
-    },
-    counterparties: [
-      { name: 'Bank 1',
-        constellationAddress: 'skldfbsd=='
+  app.DeployNewNostroAgreement(details, function(nostroAgreement){
+    var obj = {
+      currency1: {
+        address: '0x1234',
+        name: details.currency1
       },
-      { name: details.counterparty,
-        constellationAddress: 'ldfbslkgbs=='
-      }
-    ]
-  }
-  res.send(JSON.stringify(obj));
+      currency2: {
+        address: '0x5678',
+        name: details.currency2
+      },
+      counterparties: [
+        { name: 'Bank 1',
+          constellationAddress: 'skldfbsd=='
+        },
+        { name: details.counterparty,
+          constellationAddress: 'ldfbslkgbs=='
+        }
+      ]
+    }
+    res.send(JSON.stringify(obj));
+  }); 
+});
+
+api.get('/getNostroAgreements', function(req, res) {
+  var nostroAgreements = app.GetNostroAgreements();
+  res.send(JSON.stringify(nostroAgreements));
 });
 
 let port = 4000;

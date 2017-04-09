@@ -26,15 +26,154 @@ var nodeIdentityName = 'unset';
 var constellationNodes = {};
 // TODO: rename object collections to mappings
 var nodeNames = {};
+
+var nostroAgreements = {};
+
 var currencyContractList = [];
 var activeCurrencyContractNr = 0;
 
 var forexContractList = [];
 var activeForexContractNr = 0;
 
+
 function getNodes(){
   var nodes = resolveCounterpartyNames(constellationNodes);
   return nodes; 
+}
+
+function getNostroAgreements(){
+  return nostroAgreements; 
+}
+
+function deployCurrencyContract(deployAddress, currencyName, counterparties, cb){
+  contracts.SubmitPrivateCurrencyContract(deployAddress, currencyName, counterparties
+  , function(newContract){ 
+    cb({
+      abi: newContract.abi,
+      address: newContract.address,
+      counterparties: counterparties
+    });
+  });
+}
+
+function deployNostroContract(deployAddress, counterparties, cb){
+  contracts.SubmitNostroContract(deployAddress, counterparties, function(newContract){ 
+    cb({
+      abi: newContract.abi,
+      address: newContract.address,
+      counterparties: counterparties
+    });
+  });
+}
+
+function deployNewNostroAgreement({currency1, currency2, counterparty} , cb){
+  var constellationKey = getConstellationKeyFromName(counterparty);
+  deployCurrencyContract(web3.eth.accounts[0], currency1, [constellationKey]
+  , function(currency1Contract){
+    currency1Contract.name = currency1;
+    deployNostroContract(web3.eth.accounts[0], [constellationKey], function(nostroContract){ 
+
+      nostroAgreements[nostroContract.address] = {
+        currency1Contract: currency1Contract,
+        currency2Contract: null,
+        nostroContract: nostroContract
+      };
+
+      util.GetThisNodesConstellationPubKey(function(thisNodesConstellationKey){
+
+        var message = 'request|newNostroAgreement|'+currency2;
+        message += '|'+JSON.stringify(nostroAgreements[nostroContract.address]);
+        message += '|'+thisNodesConstellationKey;
+        var hexString = new Buffer(message).toString('hex');
+        web3.shh.post({
+          "topics": ["NewNostroAgreement"],
+          "from": myId,
+          "payload": hexString,
+          "ttl": 10,
+          "workToProve": 1
+        }, function(err, res){
+          cb(nostroAgreements[nostroContract.address]);
+        });
+      });
+    });
+  });
+}
+
+function newNostroAgreementListener(){
+  web3.shh.filter({"topics":["NewNostroAgreement"]}).watch(function(err, msg) {
+    if(err){console.log("ERROR:", err);};
+    var message = util.Hex2a(msg.payload);
+    if(message.indexOf('request|newNostroAgreement') >= 0 && msg.from != myId){
+      var messageArr = message.split('|');
+      var currency2 = messageArr[2];
+      var newNostroAgreement = JSON.parse(messageArr[3]); 
+      nostroAgreements[newNostroAgreement.nostroContract.address] = newNostroAgreement;
+      var constellationKey = JSON.parse(messageArr[4]); 
+      deployCurrencyContract(web3.eth.accounts[0], currency2, [constellationKey]
+      , function(currency2Contract){
+        currency2Contract.name = currency2;
+        nostroAgreements[newNostroAgreement.nostroContract.address]
+          .currency2Contract = currency2Contract;
+
+        var message = 'response|newNostroAgreement';
+        message += '|'+newNostroAgreement.nostroContract.address;
+        message += '|'+JSON.stringify(currency2Contract);
+        var hexString = new Buffer(message).toString('hex');
+        web3.shh.post({
+          "topics": ["NewNostroAgreement"],
+          "from": myId,
+          "payload": hexString,
+          "ttl": 10,
+          "workToProve": 1
+        }, function(err, res){
+        });
+      });
+    } else if(message.indexOf('response|newNostroAgreement') >= 0 && msg.from != myId){
+      var messageArr = message.split('|');
+      var id = messageArr[2];
+      var currency2Contract = JSON.parse(messageArr[3]);
+      nostroAgreements[id].currency2Contract = currency2Contract; 
+    }
+  });
+}
+
+// TODO: this can be cleaned up but shouldn't be a problem until we hit many nodes/counterparties
+function resolveCounterpartyNames(counterparties){
+  var counterpartyNames = [];
+  for(var i in counterparties){
+    var constellationKey = counterparties[i];
+    for(var j in constellationNodes){
+      var constellationNode = constellationNodes[j];
+      if(constellationNode == constellationKey){ // We've found the associated whisper identity
+        for(var k in nodeNames){
+          var nodeName = nodeNames[k];
+          if(j == k){ // We've found the nodeName we are looking for
+            counterpartyNames.push({
+              name: nodeName,
+              constellationAddress: constellationKey
+            });
+          }
+        }
+        break; 
+      }
+    } 
+  }
+  return counterpartyNames;
+}
+
+function getConstellationKeyFromName(counterpartyName){
+  var found = false;
+  for(var whisperId in nodeNames){
+    var nodeName = nodeNames[whisperId];
+    if(nodeName === counterpartyName){
+      found = true;
+      return constellationNodes[whisperId];
+      break;
+    }
+  }
+  if(found === false){
+    return null;
+  }
 }
 
 function startConstellationListeners(){
@@ -213,82 +352,6 @@ function broadcastCurrencyContractToCounterparties(counterparties, contract, cb)
   });
 }
 
-// TODO: housekeeping!!!
-function deployPrivateContract(cb){
-  console.log('Select whom to include in this contract.'); 
-  console.log('Enter a number followed by enter. Select done when complete\n'); 
-  var selectedNumbers = [];
-  displayConstellationKeys(function(){
-    console.log('0) Done');
-    console.log('---');
-    getNodesToShareWith(selectedNumbers, function(){
-      resolveNumbersToNodes(selectedNumbers, function(nodes){
-        var counterparties = [];  
-        console.log('Nodes included in this contract is:');
-        for(var i in nodes){
-          var node = nodes[i];
-          console.log(node.name);
-          counterparties.push(node.constellationKey);
-        }
-        contracts.SubmitPrivateContract(web3.eth.accounts[0], counterparties, function(newContract){ 
-          var contractInstance = contracts.GetContractInstance(
-                                  newContract.abi
-                                , newContract.address);
-
-          util.GetThisNodesConstellationPubKey(function(constellationKey){
-            counterparties.push(constellationKey);
-            broadcastCurrencyContractToCounterparties(counterparties, newContract, function(){
-              cb();
-            });
-          });
-        });
-      });
-    });
-  });
-}
-
-// TODO: this can be cleaned up but shouldn't be a problem until we hit many nodes/counterparties
-function resolveCounterpartyNames(counterparties){
-  var counterpartyNames = [];
-  for(var i in counterparties){
-    var constellationKey = counterparties[i];
-    for(var j in constellationNodes){
-      var constellationNode = constellationNodes[j];
-      if(constellationNode == constellationKey){ // We've found the associated whisper identity
-        for(var k in nodeNames){
-          var nodeName = nodeNames[k];
-          if(j == k){ // We've found the nodeName we are looking for
-            counterpartyNames.push({
-              name: nodeName,
-              constellationAddress: constellationKey
-            });
-          }
-        }
-        break; 
-      }
-    } 
-  }
-  return counterpartyNames;
-}
-
-function deployUSDZARContract(cb){
-  var counterparties = currencyContractList[activeCurrencyContractNr].counterparties.slice();
-  util.GetThisNodesConstellationPubKey(function(constellationKey){
-    while(counterparties.indexOf(constellationKey) >= 0){
-      counterparties.splice(counterparties.indexOf(constellationKey), 1);
-    }
-    contracts.SubmitUSDZARContract(web3.eth.accounts[0], counterparties, function(newContract){ 
-      var contractInstance = contracts.GetContractInstance(
-                              newContract.abi
-                            , newContract.address);
-
-      broadcastForexContractToCounterparties(counterparties, newContract, function(){
-        cb();
-      });
-    });
-  });
-}
-
 function startNostroAccountManagementListeners(){
   web3.shh.filter({"topics":["NostroAccountManagement"]}).watch(function(err, msg) {
     if(err){console.log("ERROR:", err);};
@@ -391,6 +454,7 @@ function requestNostroTopUp(cb){
 function start(){
   startConstellationListeners();
   startNodeNameListeners();
+  newNostroAgreementListener();
   startCurrencyContractListeners();
   startForexContractListeners();
   startNostroAccountManagementListeners();
@@ -410,6 +474,8 @@ function start(){
   }, 1*1000);
 }
 
+exports.DeployNewNostroAgreement = deployNewNostroAgreement;
 exports.CreateNewAccount = addressBook.CreateNewAccount;
 exports.Start = start;
 exports.GetNodes = getNodes;
+exports.GetNostroAgreements = getNostroAgreements;

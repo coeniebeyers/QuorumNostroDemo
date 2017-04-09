@@ -42,7 +42,21 @@ function getNodes(){
 }
 
 function getNostroAgreements(){
-  return nostroAgreements; 
+  var list = [];
+  for(var i in nostroAgreements){
+    var nostroAgreement = nostroAgreements[i];
+    var counterparties1 = resolveCounterpartyNames(nostroAgreement.currency1Contract.counterparties);
+    var counterparties2 = resolveCounterpartyNames(nostroAgreement.currency2Contract.counterparties);
+    var obj = {
+      currency1: nostroAgreement.currency1Contract.name,
+      counterpartiesToCurrency1: counterparties1,
+      currency2: nostroAgreement.currency2Contract.name,
+      counterpartiesToCurrency2: counterparties2,
+      id: nostroAgreement.nostroContract.address
+    }
+    list.push(obj); 
+  }
+  return list; 
 }
 
 function deployCurrencyContract(deployAddress, currencyName, counterparties, cb){

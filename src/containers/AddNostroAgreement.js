@@ -48,7 +48,7 @@ let AddNostroAgreement = ({ dispatch }) => {
 					</tr>
 					<tr>
 						<td>
-							Currency1
+							Currency offered
 						</td>
 						<td>
 							<input ref={node => {currency1 = node}} />
@@ -56,7 +56,7 @@ let AddNostroAgreement = ({ dispatch }) => {
 					</tr>
 					<tr>
 						<td>
-							Currency2
+							Currency required
 						</td>
 						<td>
 							<input ref={node => {currency2 = node}} />

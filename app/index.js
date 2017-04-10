@@ -70,6 +70,9 @@ function getNostroBalances(){
     var contact = contactList[i];
     var owner = resolveCounterpartyNames([contact.constellationKey])[0];
     var balances = getBalancesPerNostroAgreement(contact.address);
+    if(balances.length == 0){
+      continue;
+    }
     var obj = {
       address: contact.address,
       name: contact.name,

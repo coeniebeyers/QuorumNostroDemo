@@ -86,7 +86,6 @@ function receiveNewNostroAgreement(nostroAgreement) {
 
 export function addNostroAgreement(nostroAgreementDetails){
   return function(dispatch) {
-
     // TODO: Add this node name
     fetch("http://localhost:4000/deployNewNostroAgreement?details="+JSON.stringify(nostroAgreementDetails))
   }
@@ -103,6 +102,40 @@ export function pollNostroAgreements(){
       for(var i = 0; i < nostroAgreements.length; i++){
         var nostroAgreement = nostroAgreements[i]
         dispatch(receiveNewNostroAgreement(nostroAgreement));
+      }
+    })
+  }
+}
+
+let nextNostroBalanceId = 0;
+export const REQUEST_NEW_NOSTROBALANCE = 'REQUEST_NEW_NOSTROBALANCE'
+function requestNewNostroBalance() {
+  return {
+    type: REQUEST_NEW_NOSTROBALANCE
+  }
+}
+
+export const RECEIVE_NEW_NOSTROBALANCE = 'RECEIVE_NEW_NOSTROBALANCE'
+function receiveNewNostroBalance(nostroBalance) {
+  return {
+    type: RECEIVE_NEW_NOSTROBALANCE,
+    id: nextNostroBalanceId++,
+    nostroBalance
+  }
+}
+
+export function pollNostroBalances(){
+  return function(dispatch) {
+
+    dispatch(requestNewNostroBalance())
+
+    fetch("http://localhost:4000/getNostroBalances")
+    .then(response => response.json())
+    .then(nostroBalances => {
+      console.log('nostroBalances:', nostroBalances);
+      for(var i = 0; i < nostroBalances.length; i++){
+        var nostroBalance = nostroBalances[i]
+        dispatch(receiveNewNostroBalance(nostroBalance));
       }
     })
   }

@@ -35,6 +35,51 @@ var activeCurrencyContractNr = 0;
 var forexContractList = [];
 var activeForexContractNr = 0;
 
+function getBalancesPerNostroAgreement(address){
+  var list = [];
+  for(var i in nostroAgreements){
+    var nostroAgreement = nostroAgreements[i]; 
+    if(nostroAgreement.currency1Contract == null || nostroAgreement.currency2Contract == null){
+      continue;
+    }
+
+    var balances = {};
+    balances.nostroId = nostroAgreement.nostroContract.address;
+
+    var currency1Contract = nostroAgreement.currency1Contract;
+    var contract1 = contracts.GetContractInstance(currency1Contract.abi, currency1Contract.address);
+    var currency1Balance = contract1.balanceOf(address).toString();
+    balances.currency1Balance = currency1Balance; 
+    balances.currency1Name = currency1Contract.name; 
+
+    var currency2Contract = nostroAgreement.currency2Contract;
+    var contract2 = contracts.GetContractInstance(currency2Contract.abi, currency2Contract.address);
+    var currency2Balance = contract2.balanceOf(address).toString();
+    balances.currency2Balance = currency2Balance; 
+    balances.currency2Name = currency2Contract.name; 
+
+    list.push(balances);
+  }
+  return list;
+}
+
+function getNostroBalances(){
+  var list = [];
+  var contactList = addressBook.ContactList;
+  for(var i in contactList){
+    var contact = contactList[i];
+    var owner = resolveCounterpartyNames([contact.constellationKey])[0];
+    var balances = getBalancesPerNostroAgreement(contact.address);
+    var obj = {
+      address: contact.address,
+      name: contact.name,
+      balances: balances,
+      owner: owner
+    }
+    list.push(obj);
+  }
+  return list;
+}
 
 function getNodes(){
   var nodes = resolveCounterpartyNames(constellationNodes);
@@ -513,7 +558,9 @@ function start(){
 }
 
 exports.DeployNewNostroAgreement = deployNewNostroAgreement;
-exports.CreateNewAccount = addressBook.CreateNewAccount;
 exports.Start = start;
 exports.GetNodes = getNodes;
 exports.GetNostroAgreements = getNostroAgreements;
+exports.GetNostroBalances = getNostroBalances;
+
+exports.CreateNewAccount = addressBook.CreateNewAccount;

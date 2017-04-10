@@ -4,7 +4,7 @@ var util = require('./util.js');
 
 var unlockDuration = 999999;
 var defaultPassword = '';
-var defaultAccountName = 'FSR';
+var defaultAccountName = 'unset';
 var web3 = null;
 var web3IPC = null;
 var contactList = [];
@@ -92,6 +92,7 @@ function createNewAccount(cb){
     web3IPC.personal.unlockAccount(
     address, defaultPassword, unlockDuration, function(err, res){
       if(err){console.log('ERROR:', err)}
+      accountMapping[address] = defaultAccountName; 
       cb({
         address: address,
       });
@@ -105,6 +106,7 @@ function loadAllNodeAccounts(){
     accountMapping[web3.eth.accounts[i]] = defaultAccountName; 
   }
 }
+
 function unlockAllAccounts(){
   console.log('[INFO] Unlocking all accounts ...');
   async.each(web3.eth.accounts, function(account, callback){

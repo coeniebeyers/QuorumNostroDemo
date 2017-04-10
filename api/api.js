@@ -43,6 +43,11 @@ api.get('/getNostroAgreements', function(req, res) {
   res.send(JSON.stringify(nostroAgreements));
 });
 
+api.get('/getNostroBalances', function(req, res) {
+  var balances = app.GetNostroBalances();
+  res.send(balances);
+});
+
 let port = 4000;
 api.listen(port, function () {
   console.log('api listening on port '+port+'!')

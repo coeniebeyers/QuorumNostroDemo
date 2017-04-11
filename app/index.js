@@ -339,6 +339,11 @@ function startNostroAccountManagementListeners(){
     if(err){console.log("ERROR:", err);};
     var message = util.Hex2a(msg.payload);
     if(message.indexOf('request|topup') >= 0 && msg.from != myId){
+
+      //TODO: once this topup request comes through we should ask the other party what the rate is
+      // For now we will simply set it as 10
+      var rate = 10;
+
       var messageArr = message.split('|');
       var amount = Number(messageArr[2]); // Amount of currency2, USD
       var requesterAddress = messageArr[3]; // SA Bank address
@@ -368,16 +373,18 @@ function startNostroAccountManagementListeners(){
                      requesterAddress, 
                      currency2Contract.address, 
                      amount, 
-                     10
+                     rate
                    );
         gas = web3.eth.estimateGas({data: callData});
-        nostroInstance.addApproval(requesterAddress, currency2Contract.address, amount, 10,
+        nostroInstance.addApproval(requesterAddress, currency2Contract.address, amount, rate,
           {from: web3.eth.accounts[0], gas: gas, privateFor: counterparties} 
           , function(err, txHash){
 
           if(err){console.log('ERROR:', err)}
           // Respond with which vostro account should be credited 
-          var message = 'response|topup|'+web3.eth.accounts[0];
+          var message = 'response|topup';
+          message = '|'+web3.eth.accounts[0];
+          message = '|'+rate;
           var hexString = new Buffer(message).toString('hex');
           web3.shh.post({
             "topics": ["NostroAccountManagement"],
@@ -415,6 +422,7 @@ function requestNostroTopUp(currency2Amount, nostroAgreementId, cb){
         var messageArr = message.split('|');
         // TODO: approverAddress doesn't seem to be used anywhere
         var approverAddress = messageArr[2]; // US Bank's ZAR account
+        var rate = Number(messageArr[3]); // The rate from the other party
 
         var nostroAgreement = nostroAgreements[nostroAgreementId];
         var currency1Contract = nostroAgreement.currency1Contract; 
@@ -424,8 +432,7 @@ function requestNostroTopUp(currency2Amount, nostroAgreementId, cb){
                                 );
 
         var counterparties = currency1Contract.counterparties.slice();
-        // TODO: assume exchange rate of 10 for now, this should come from the other party
-        var currency1Amount = Math.round(currency2Amount*10);
+        var currency1Amount = Math.round(currency2Amount*rate);
         var nostroContract = nostroAgreement.nostroContract;
         var callData = 
           currency1Instance.approveAndCall.getData(nostroContract.address, currency1Amount, '');

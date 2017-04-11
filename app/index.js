@@ -383,8 +383,8 @@ function startNostroAccountManagementListeners(){
           if(err){console.log('ERROR:', err)}
           // Respond with which vostro account should be credited 
           var message = 'response|topup';
-          message = '|'+web3.eth.accounts[0];
-          message = '|'+rate;
+          message += '|'+web3.eth.accounts[0];
+          message += '|'+rate;
           var hexString = new Buffer(message).toString('hex');
           web3.shh.post({
             "topics": ["NostroAccountManagement"],

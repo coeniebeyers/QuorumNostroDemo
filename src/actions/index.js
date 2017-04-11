@@ -32,6 +32,22 @@ export function addAccount(accountName){
   }
 }
 
+export function getExistingAccounts(){
+  return function(dispatch) {
+
+    fetch("http://localhost:4000/getAccountMapping")
+    .then(response => response.json())
+    .then(accountMapping => {
+      let keys = Object.keys(accountMapping);
+      console.log('keys:', keys)
+      for(let i=0; i<keys.length; i++){
+        let key = keys[i];
+        dispatch(receiveNewAccount(accountMapping[key], key));
+      }
+    })
+  }
+}
+
 
 let nextNodeId = 0;
 export const REQUEST_NODES = 'REQUEST_NODES'

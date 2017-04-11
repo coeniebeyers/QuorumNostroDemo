@@ -7,6 +7,7 @@ import { HashRouter, Route } from 'react-router-dom';
 import AddressBook from './components/AddressBook'
 import Counterparties from './components/Counterparties'
 import NostroAgreements from './components/NostroAgreements'
+import TopUpNostro from './components/TopUpNostro'
 import NostroBalances from './components/NostroBalances'
 import reducer from './reducers'
 import { pollNewNodes, pollNostroAgreements, pollNostroBalances } from './actions'
@@ -34,6 +35,7 @@ render(
 				<Route path="/home" component={NostroBalances} />
 				<Route path="/address" component={AddressBook} />
 				<Route path="/nostroAgreements" component={NostroAgreements} />
+				<Route path="/topUpNostro" component={TopUpNostro} />
 				<Route path="/counterparties" component={Counterparties} />
 			</div>
 		</HashRouter>

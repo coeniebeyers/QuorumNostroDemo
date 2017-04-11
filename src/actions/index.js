@@ -132,7 +132,7 @@ export function pollNostroBalances(){
     fetch("http://localhost:4000/getNostroBalances")
     .then(response => response.json())
     .then(nostroBalances => {
-      console.log('nostroBalances:', nostroBalances);
+      //console.log('nostroBalances:', nostroBalances);
       for(var i = 0; i < nostroBalances.length; i++){
         var nostroBalance = nostroBalances[i]
         dispatch(receiveNewNostroBalance(nostroBalance));

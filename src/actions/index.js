@@ -1,6 +1,8 @@
 require('es6-promise').polyfill();
 import fetch from 'isomorphic-fetch'
 
+let ipAddressAndPort = 'http://13.69.120.57:4000'
+
 let nextAccountId = 0;
 export const REQUEST_NEW_ACCOUNT = 'REQUEST_NEW_ACCOUNT'
 function requestNewAccount() {
@@ -24,7 +26,7 @@ export function addAccount(accountName){
 
     dispatch(requestNewAccount());
   
-    fetch("http://localhost:4000/getNewAccountAddress")
+    fetch(ipAddressAndPort+"/getNewAccountAddress")
     .then(response => response.json())
     .then(json => {
       dispatch(receiveNewAccount(accountName, json.address));
@@ -35,7 +37,7 @@ export function addAccount(accountName){
 export function getExistingAccounts(){
   return function(dispatch) {
 
-    fetch("http://localhost:4000/getAccountMapping")
+    fetch(ipAddressAndPort+"/getAccountMapping")
     .then(response => response.json())
     .then(accountMapping => {
       let keys = Object.keys(accountMapping);
@@ -72,7 +74,7 @@ export function pollNewNodes(){
 
     dispatch(requestNodes());
   
-    fetch("http://localhost:4000/getNodes")
+    fetch(ipAddressAndPort+"/getNodes")
     .then(response => response.json())
     .then(nodeList => {
       for(var i = 0; i < nodeList.length; i++){
@@ -103,7 +105,7 @@ function receiveNewNostroAgreement(nostroAgreement) {
 export function addNostroAgreement(nostroAgreementDetails){
   return function(dispatch) {
     // TODO: Add this node name
-    fetch("http://localhost:4000/deployNewNostroAgreement?details="+JSON.stringify(nostroAgreementDetails))
+    fetch(ipAddressAndPort+"/deployNewNostroAgreement?details="+JSON.stringify(nostroAgreementDetails))
   }
 }
 
@@ -112,7 +114,7 @@ export function pollNostroAgreements(){
 
     dispatch(requestNewNostroAgreement())
 
-    fetch("http://localhost:4000/getNostroAgreements")
+    fetch(ipAddressAndPort+"/getNostroAgreements")
     .then(response => response.json())
     .then(nostroAgreements => {
       for(var i = 0; i < nostroAgreements.length; i++){
@@ -145,7 +147,7 @@ export function pollNostroBalances(){
 
     dispatch(requestNewNostroBalance())
 
-    fetch("http://localhost:4000/getNostroBalances")
+    fetch(ipAddressAndPort+"/getNostroBalances")
     .then(response => response.json())
     .then(nostroBalances => {
       //console.log('nostroBalances:', nostroBalances);

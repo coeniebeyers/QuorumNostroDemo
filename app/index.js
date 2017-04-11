@@ -480,3 +480,4 @@ exports.GetNostroBalances = getNostroBalances;
 exports.RequestNostroTopUp = requestNostroTopUp;
 
 exports.CreateNewAccount = addressBook.CreateNewAccount;
+exports.AccountMapping = addressBook.AccountMapping;

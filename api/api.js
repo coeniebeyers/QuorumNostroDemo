@@ -25,6 +25,11 @@ api.get('/getNewAccountAddress', function(req, res) {
   });
 });
 
+api.get('/getAccountMapping', function(req, res) {
+  var accountMapping = app.AccountMapping;
+  res.send(JSON.stringify(accountMapping));
+});
+
 api.get('/getNodes', function(req, res) {
   var nodeList = app.GetNodes();
   res.send(JSON.stringify(nodeList));

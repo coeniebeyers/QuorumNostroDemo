@@ -1,12 +1,12 @@
 import React from 'react'
-import NostroAgreementListForSelect from '../containers/NostroAgreementListForSelect'
+import SelectNostroAgreement from '../containers/SelectNostroAgreement'
 import NavBar from '../components/NavBar'
 
 const TopUpNostro = () => (
   <div>
     <NavBar />
     <p>Top up Nostro screen</p> 
-		<NostroAgreementListForSelect />
+		<SelectNostroAgreement />
   </div>
 )
 

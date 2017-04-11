@@ -38,6 +38,15 @@ api.get('/deployNewNostroAgreement', function(req, res) {
   }); 
 });
 
+api.get('/requestNostroTopUp', function(req, res) {
+  var details = JSON.parse(req.query.details);
+  var currency2Amount = Number(details.currency2Amount);
+  var nostroAgreementId = details.nostroAgreementId;
+  app.RequestNostroTopUp(currency2Amount, nostroAgreementId, function(txHash){
+    res.send(txHash);
+  }); 
+});
+
 api.get('/getNostroAgreements', function(req, res) {
   var nostroAgreements = app.GetNostroAgreements();
   res.send(JSON.stringify(nostroAgreements));

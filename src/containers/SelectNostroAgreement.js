@@ -4,6 +4,7 @@ import SelectNostroDropDown from '../components/SelectNostroDropDown'
 
 const formatNostroAgreementListForDropDown = (nostroAgreementList) => {
 	console.log('nostroAgreementList:', nostroAgreementList);
+	//TODO: Need to map the nostro agreements to an array containing value and label
 	return [
 		{value: "1234", label:"JPM USD/ZAR agreement"}
 	]

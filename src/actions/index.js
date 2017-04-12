@@ -1,7 +1,7 @@
 require('es6-promise').polyfill();
 import fetch from 'isomorphic-fetch'
 
-let ipAddressAndPort = 'http://13.69.120.57:4000'
+let ipAddressAndPort = 'http://localhost:4000'
 
 let nextAccountId = 0;
 export const REQUEST_NEW_ACCOUNT = 'REQUEST_NEW_ACCOUNT'
@@ -158,6 +158,22 @@ export function pollNostroBalances(){
     })
   }
 }
+
+export function topUpNostro(requestedAmount, selectedNostroAgreement){
+  return function(dispatch) {
+		var topUpDetails = {
+			currency2Amount: requestedAmount,
+			nostroAgreementId: selectedNostroAgreement
+		};
+
+    fetch(ipAddressAndPort+"/requestNostroTopUp?details="+JSON.stringify(topUpDetails))
+    .then(response => response.json())
+    .then(response => {
+      console.log('response:', response);
+    })
+  }
+}
+
 
 export const UPDATE_SELECTED_NOSTRO = 'UPDATE_SELECTED_NOSTRO'
 export function updateSelectedNostroAgreement(selectedNostroAgreement) {

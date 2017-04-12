@@ -38,36 +38,38 @@ let AddNostroAgreement = ({ dispatch }) => {
         currency2.value = ''
       }}>
 				<table>
-					<tr>
-						<td>
-							Counterparty name
-						</td>
-						<td>
-							<input ref={node => {counterparty = node}} />
-						</td>
-					</tr>
-					<tr>
-						<td>
-							Currency offered
-						</td>
-						<td>
-							<input ref={node => {currency1 = node}} />
-						</td>
-					</tr>
-					<tr>
-						<td>
-							Currency required
-						</td>
-						<td>
-							<input ref={node => {currency2 = node}} />
-						</td>
-					</tr>
-					<tr>
-						<td>&nbsp;</td>
-						<td>
-        			<button type="submit">Add Nostro Agreement</button>
-						</td>
-					</tr>
+					<tbody>
+						<tr>
+							<td>
+								Counterparty name
+							</td>
+							<td>
+								<input ref={node => {counterparty = node}} />
+							</td>
+						</tr>
+						<tr>
+							<td>
+								Currency offered
+							</td>
+							<td>
+								<input ref={node => {currency1 = node}} />
+							</td>
+						</tr>
+						<tr>
+							<td>
+								Currency required
+							</td>
+							<td>
+								<input ref={node => {currency2 = node}} />
+							</td>
+						</tr>
+						<tr>
+							<td>&nbsp;</td>
+							<td>
+								<button type="submit">Add Nostro Agreement</button>
+							</td>
+						</tr>
+					</tbody>
 				</table>
       </form>
     </div>

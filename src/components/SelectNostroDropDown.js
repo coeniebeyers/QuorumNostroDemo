@@ -2,7 +2,7 @@ import React, { PropTypes } from 'react'
 import Select from 'react-select';
 
 const SelectNostroDropDown = ({ nostroAgreements, selectedNostroAgreement, onNostroSelect }) => (
-	<Select autofocus options={nostroAgreements} simpleValue name="selected-nostro" value={selectedNostroAgreement} onChange={onNostroSelect} />
+	<Select autofocus options={nostroAgreements} simpleValue name="selected-nostro" placeholder="Select Nostro Contract" value={selectedNostroAgreement} onChange={onNostroSelect} />
 )
 
 SelectNostroDropDown.propTypes = {

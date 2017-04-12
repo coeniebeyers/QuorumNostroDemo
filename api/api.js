@@ -25,6 +25,11 @@ api.get('/getNewAccountAddress', function(req, res) {
   });
 });
 
+api.get('/getAccountMapping', function(req, res) {
+  var accountMapping = app.AccountMapping;
+  res.send(JSON.stringify(accountMapping));
+});
+
 api.get('/getNodes', function(req, res) {
   var nodeList = app.GetNodes();
   res.send(JSON.stringify(nodeList));
@@ -35,6 +40,15 @@ api.get('/deployNewNostroAgreement', function(req, res) {
   app.DeployNewNostroAgreement(details, function(nostroAgreement){
     var nostroAgreements = app.GetNostroAgreements();
     res.send(JSON.stringify(nostroAgreements));
+  }); 
+});
+
+api.get('/requestNostroTopUp', function(req, res) {
+  var details = JSON.parse(req.query.details);
+  var currency2Amount = Number(details.currency2Amount);
+  var nostroAgreementId = details.nostroAgreementId;
+  app.RequestNostroTopUp(currency2Amount, nostroAgreementId, function(txHash){
+    res.send(txHash);
   }); 
 });
 

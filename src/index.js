@@ -10,7 +10,11 @@ import NostroAgreements from './components/NostroAgreements'
 import TopUpNostro from './components/TopUpNostro'
 import NostroBalances from './components/NostroBalances'
 import reducer from './reducers'
-import { pollNewNodes, pollNostroAgreements, pollNostroBalances } from './actions'
+import { pollNewNodes, 
+  pollNostroAgreements, 
+  pollNostroBalances, 
+  getExistingAccounts 
+} from './actions'
 
 const store = createStore(
   reducer,
@@ -21,11 +25,12 @@ const store = createStore(
   )
 )
 
+store.dispatch(getExistingAccounts())
 setInterval(function(){
   store.dispatch(pollNewNodes())
   store.dispatch(pollNostroAgreements())
   store.dispatch(pollNostroBalances())
-}, 1000)
+}, 3000)
 
 render(
 	<Provider store={store}>

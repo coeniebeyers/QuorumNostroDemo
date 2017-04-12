@@ -29,12 +29,6 @@ var nodeNames = {};
 
 var nostroAgreements = {};
 
-var currencyContractList = [];
-var activeCurrencyContractNr = 0;
-
-var forexContractList = [];
-var activeForexContractNr = 0;
-
 function getBalancesPerNostroAgreement(address){
   var list = [];
   for(var i in nostroAgreements){
@@ -311,47 +305,6 @@ function startNodeNameListeners(){
   });
 }
 
-// TODO: add token to message giving the contract a name
-function startCurrencyContractListeners(){
-  web3.shh.filter({"topics":["Currency"]}).watch(function(err, msg) {
-    if(err){console.log("ERROR:", err);};
-    var message = util.Hex2a(msg.payload);
-    if(message.indexOf('info') >= 0){
-      var messageArr = message.split('|');
-      var contractObj = JSON.parse(messageArr[1]);
-      var contractInstance = contracts.GetContractInstance(contractObj.abi, contractObj.address);
-      var counterparties = JSON.parse(messageArr[2]);
-      currencyContractList.push({
-        timestamp: new Date(),
-        contractInstance: contractInstance,
-        counterparties: counterparties,
-        address: contractObj.address,
-        abi: contractObj.abi
-      });
-    }
-  });
-}
-
-function startForexContractListeners(){
-  web3.shh.filter({"topics":["Forex"]}).watch(function(err, msg) {
-    if(err){console.log("ERROR:", err);};
-    var message = util.Hex2a(msg.payload);
-    if(message.indexOf('info') >= 0){
-      var messageArr = message.split('|');
-      var contractObj = JSON.parse(messageArr[1]);
-      var contractInstance = contracts.GetContractInstance(contractObj.abi, contractObj.address);
-      var counterparties = JSON.parse(messageArr[2]);
-      forexContractList.push({
-        timestamp: new Date(),
-        contractInstance: contractInstance,
-        counterparties: counterparties,
-        address: contractObj.address,
-        abi: contractObj.abi
-      });
-    }
-  });
-}
-
 function requestConstellationKeys(){
   var message = 'request|publicKey';
   var hexString = new Buffer(message).toString('hex');
@@ -380,106 +333,67 @@ function requestNodeNames(){
   });
 }
 
-function resolveNumbersToNodes(selectedNumbers, cb){
-  var selectedNodes = [];
-  var i = 1;
-  for(var id in constellationNodes){
-    for(var j in selectedNumbers){
-      var nr = Number(selectedNumbers[j]);
-      if(nr == i) {
-        var constellationKey = constellationNodes[id];
-        var name = nodeNames[id];
-        selectedNodes.push({
-          constellationKey: constellationKey,
-          name: name
-        }); 
-      }
-    }
-    i++;
-  }
-  cb(selectedNodes);
-}
-
-function broadcastForexContractToCounterparties(counterparties, contract, cb){
-  var payload = 'info';
-  payload += '|'+JSON.stringify(contract);
-  payload += '|'+JSON.stringify(counterparties);
-  var hexPayload = new Buffer(payload).toString('hex');
-  // TODO: there needs to be a 'to' field added so that other non-counterparty 
-  //        nodes can't listen in
-  web3.shh.post({
-    "topics": ["Forex"],
-    "from": myId,
-    "payload": hexPayload,
-    "ttl": 10,
-    "workToProve": 1
-  }, function(err, res){
-    if(err){console.log('err', err);}
-    cb();
-  });
-}
-
-function broadcastCurrencyContractToCounterparties(counterparties, contract, cb){
-  var payload = 'info';
-  payload += '|'+JSON.stringify(contract);
-  payload += '|'+JSON.stringify(counterparties);
-  var hexPayload = new Buffer(payload).toString('hex');
-  // TODO: there needs to be a 'to' field added so that other non-counterparty 
-  //        nodes can't listen in
-  web3.shh.post({
-    "topics": ["Currency"],
-    "from": myId,
-    "payload": hexPayload,
-    "ttl": 10,
-    "workToProve": 1
-  }, function(err, res){
-    if(err){console.log('err', err);}
-    cb();
-  });
-}
-
+// TODO: this urrently only works for currency1 as the requester
 function startNostroAccountManagementListeners(){
   web3.shh.filter({"topics":["NostroAccountManagement"]}).watch(function(err, msg) {
     if(err){console.log("ERROR:", err);};
     var message = util.Hex2a(msg.payload);
     if(message.indexOf('request|topup') >= 0 && msg.from != myId){
+
+      //TODO: once this topup request comes through we should ask the other party what the rate is
+      // For now we will simply set it as 10
+      var rate = 10;
+
       var messageArr = message.split('|');
-      var amount = Number(messageArr[2]); // Amount of token2, USD
+      var amount = Number(messageArr[2]); // Amount of currency2, USD
       var requesterAddress = messageArr[3]; // SA Bank address
-      var tokenAddress = messageArr[4]; // token1, ZAR
-      // Respond with which vostro account should be credited 
-      var message = 'response|topup|'+web3.eth.accounts[0];
-      var hexString = new Buffer(message).toString('hex');
-      web3.shh.post({
-        "topics": ["NostroAccountManagement"],
-        "from": myId,
-        "payload": hexString,
-        "ttl": 10,
-        "workToProve": 1
-      }, function(err, res){
-        if(err){console.log('err', err);}
-        var contractInstance = currencyContractList[activeCurrencyContractNr].contractInstance;
-        var counterparties = currencyContractList[activeCurrencyContractNr].counterparties.slice();
-        util.GetThisNodesConstellationPubKey(function(constellationKey){
-          while(counterparties.indexOf(constellationKey) >= 0){
-            counterparties.splice(counterparties.indexOf(constellationKey), 1);
-          }
-          var activeForexContract = forexContractList[activeForexContractNr];
-          var callData = contractInstance.approve.getData(activeForexContract.address, amount);
-          var gas = web3.eth.estimateGas({data: callData});
-          var activeContractAddress = currencyContractList[activeCurrencyContractNr].address;
-          contractInstance.approve(activeForexContract.address, amount, 
-            {from: web3.eth.accounts[0], gas: gas, privateFor: counterparties} 
-            , function(err, txHash){
-            if(err){console.log('ERROR:', err)}
-            var usdzarContractInstance = contracts.GetContractInstance(
-                                    activeForexContract.abi
-                                  , activeForexContract.address);
-            usdzarContractInstance.addApproval(requesterAddress, activeContractAddress, amount, 10,  
-              {from: web3.eth.accounts[0], gas: gas, privateFor: counterparties} 
-              , function(err, txHash){
-              if(err){console.log('ERROR:', err)}
-            });
+      var nostroAgreementId = messageArr[4]; // Nostro Agreement Id
+
+      var nostroAgreement = nostroAgreements[nostroAgreementId];
+      var currency2Contract = nostroAgreement.currency2Contract;
+      var currency2Instance = contracts.GetContractInstance(
+                                currency2Contract.abi, 
+                                currency2Contract.address
+                              );
+      var counterparties = currency2Contract.counterparties.slice();
+
+      var nostroContract = nostroAgreement.nostroContract;
+      var callData = currency2Instance.approve.getData(nostroContract.address, amount);
+      var gas = web3.eth.estimateGas({data: callData});
+      currency2Instance.approve(nostroContract.address, amount, 
+        {from: web3.eth.accounts[0], gas: gas, privateFor: counterparties} 
+        , function(err, txHash){
+
+        if(err){console.log('ERROR:', err)}
+        var nostroInstance = contracts.GetContractInstance(
+                                nostroContract.abi, 
+                                nostroContract.address
+                             );
+        callData = nostroInstance.addApproval.getData(
+                     requesterAddress, 
+                     currency2Contract.address, 
+                     amount, 
+                     rate
+                   );
+        gas = web3.eth.estimateGas({data: callData});
+        nostroInstance.addApproval(requesterAddress, currency2Contract.address, amount, rate,
+          {from: web3.eth.accounts[0], gas: gas, privateFor: counterparties} 
+          , function(err, txHash){
+
+          if(err){console.log('ERROR:', err)}
+          // Respond with which vostro account should be credited 
+          var message = 'response|topup';
+          message += '|'+web3.eth.accounts[0];
+          message += '|'+rate;
+          var hexString = new Buffer(message).toString('hex');
+          web3.shh.post({
+            "topics": ["NostroAccountManagement"],
+            "from": myId,
+            "payload": hexString,
+            "ttl": 10,
+            "workToProve": 1
+          }, function(err, res){
+            if(err){console.log('err', err);}
           });
         });
       }); 
@@ -487,11 +401,10 @@ function startNostroAccountManagementListeners(){
   });
 }
 
-function requestNostroTopUp(cb){
-  var token2Amount = Number(o.amount); // token2, USD Amount
-  var message = 'request|topup|'+token2Amount;
+function requestNostroTopUp(currency2Amount, nostroAgreementId, cb){
+  var message = 'request|topup|'+currency2Amount;
   message += '|'+web3.eth.accounts[0]; // The account which to topup with token2, USD
-  message += '|'+currencyContractList[activeCurrencyContractNr].address; // Address of token1, ZAR
+  message += '|'+nostroAgreementId; // The id of which nostroAgreement to use
   var hexString = new Buffer(message).toString('hex');
   web3.shh.post({
     "topics": ["NostroAccountManagement"],
@@ -508,30 +421,31 @@ function requestNostroTopUp(cb){
         filter.stopWatching();
         var messageArr = message.split('|');
         // TODO: approverAddress doesn't seem to be used anywhere
-        var approverAddress = messageArr[2]; // US Bank ZAR account
-        //TODO: possible race condition if other party hasn't approved everything yet
-        var contractInstance = currencyContractList[activeCurrencyContractNr].contractInstance;
-        var counterparties = currencyContractList[activeCurrencyContractNr].counterparties.slice();
-        util.GetThisNodesConstellationPubKey(function(constellationKey){
-          while(counterparties.indexOf(constellationKey) >= 0){
-            counterparties.splice(counterparties.indexOf(constellationKey), 1);
-          }
-          var token1Amount = Math.round(token2Amount*10);
-          var activeForexContract = forexContractList[activeForexContractNr];
-          var callData = 
-            contractInstance.approveAndCall.getData(activeForexContract.address, token1Amount, '');
-          var gas = web3.eth.estimateGas({data: callData});
-          setTimeout(function(){
-            contractInstance.approveAndCall(activeForexContract.address, token1Amount, ''
-            , {from: web3.eth.accounts[0], gas: gas+3000000, privateFor: counterparties} 
-            , function(err, txHash){
-              if(err){console.log('ERROR:', err)}
-              contractSubMenu(function(res){
-                cb(res);
-              });
-            });
-          }, 2000);
-        });
+        var approverAddress = messageArr[2]; // US Bank's ZAR account
+        var rate = Number(messageArr[3]); // The rate from the other party
+
+        var nostroAgreement = nostroAgreements[nostroAgreementId];
+        var currency1Contract = nostroAgreement.currency1Contract; 
+        var currency1Instance = contracts.GetContractInstance(
+                                  currency1Contract.abi, 
+                                  currency1Contract.address
+                                );
+
+        var counterparties = currency1Contract.counterparties.slice();
+        var currency1Amount = Math.round(currency2Amount*rate);
+        var nostroContract = nostroAgreement.nostroContract;
+        var callData = 
+          currency1Instance.approveAndCall.getData(nostroContract.address, currency1Amount, '');
+        var gas = web3.eth.estimateGas({data: callData});
+        // We might need to wait a little bit to make sure the other party's transaction was mined
+        setTimeout(function(){
+          currency1Instance.approveAndCall(nostroContract.address, currency1Amount, ''
+          , {from: web3.eth.accounts[0], gas: gas+3000000, privateFor: counterparties} 
+          , function(err, txHash){
+            if(err){console.log('ERROR:', err)}
+            cb(txHash);
+          });
+        }, 0);
       }
     });
   });  
@@ -541,8 +455,6 @@ function start(){
   startConstellationListeners();
   startNodeNameListeners();
   newNostroAgreementListener();
-  startCurrencyContractListeners();
-  startForexContractListeners();
   startNostroAccountManagementListeners();
 
   requestNodeNames();
@@ -565,5 +477,7 @@ exports.Start = start;
 exports.GetNodes = getNodes;
 exports.GetNostroAgreements = getNostroAgreements;
 exports.GetNostroBalances = getNostroBalances;
+exports.RequestNostroTopUp = requestNostroTopUp;
 
 exports.CreateNewAccount = addressBook.CreateNewAccount;
+exports.AccountMapping = addressBook.AccountMapping;

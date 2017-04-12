@@ -140,3 +140,11 @@ export function pollNostroBalances(){
     })
   }
 }
+
+export const UPDATE_SELECTED_NOSTRO = 'UPDATE_SELECTED_NOSTRO'
+export function updateSelectedNostroAgreement(selectedNostroAgreement) {
+  return {
+    type: UPDATE_SELECTED_NOSTRO,
+    selectedNostroAgreement
+  }
+}

@@ -3,6 +3,7 @@ import nostroAgreementList from './nostroAgreements'
 import nostroBalanceList from './nostroBalances'
 import accountList from './accounts'
 import nodeList from './nodes'
+import selectedNostroAgreement from './selectNostroAgreement'
 import loadingIndicator from './loadingIndicator'
 
 const nostroAccountManagmentApp = combineReducers({
@@ -10,6 +11,7 @@ const nostroAccountManagmentApp = combineReducers({
   nodeList,
   nostroAgreementList,
   nostroBalanceList,
+  selectedNostroAgreement,
 	loadingIndicator
 })
 

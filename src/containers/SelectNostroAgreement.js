@@ -1,18 +1,26 @@
-import React from 'react'
 import { connect } from 'react-redux'
-import Select from 'react-select';
+import { updateSelectedNostroAgreement } from '../actions'
+import SelectNostroDropDown from '../components/SelectNostroDropDown'
 
-let SelectNostroAgreement = ({ state }) => {
-  function updateSelectedNostroAgreement(selectedValue){
-    this.setState({
-      selectedNostroAgreement: selectedValue
-    });
-	};	
-
-  return (
-		<Select ref="nostroSelect" autofocus options={state.nostroAgreementList} simpleValue name="selected-nostro" value={state.selectedNostroAgreement} onChange={this.updateSelectedNostroAgreement(this.updateValue)} />
-  )
+const formatNostroAgreementListForDropDown = (nostroAgreementList) => {
+	console.log('nostroAgreementList:', nostroAgreementList);
+	return [
+		{value: "1234", label:"JPM USD/ZAR agreement"}
+	]
 }
-SelectNostroAgreement = connect()(SelectNostroAgreement)
+
+const mapStateToProps = (state) => ({
+  nostroAgreements: formatNostroAgreementListForDropDown(state.nostroAgreementList),
+	selectedNostroAgreement: state.selectedNostroAgreement
+})
+
+const mapDispatchToProps = {
+  onNostroSelect: updateSelectedNostroAgreement
+}
+
+const SelectNostroAgreement = connect(
+  mapStateToProps,
+  mapDispatchToProps
+)(SelectNostroDropDown)
 
 export default SelectNostroAgreement

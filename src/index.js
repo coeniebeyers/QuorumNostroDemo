@@ -30,7 +30,7 @@ setInterval(function(){
   store.dispatch(pollNewNodes())
   store.dispatch(pollNostroAgreements())
   store.dispatch(pollNostroBalances())
-}, 3000)
+}, 1000)
 
 render(
 	<Provider store={store}>

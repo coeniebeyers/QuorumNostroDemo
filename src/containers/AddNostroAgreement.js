@@ -49,18 +49,18 @@ let AddNostroAgreement = ({ dispatch }) => {
 						</tr>
 						<tr>
 							<td>
-								Currency offered
-							</td>
-							<td>
-								<input ref={node => {currency1 = node}} />
-							</td>
-						</tr>
-						<tr>
-							<td>
 								Currency required
 							</td>
 							<td>
 								<input ref={node => {currency2 = node}} />
+							</td>
+						</tr>
+						<tr>
+							<td>
+								Currency offered
+							</td>
+							<td>
+								<input ref={node => {currency1 = node}} />
 							</td>
 						</tr>
 						<tr>

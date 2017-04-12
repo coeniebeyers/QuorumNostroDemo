@@ -16,8 +16,8 @@ let AddAccount = ({ dispatch }) => {
         dispatch(addAccount(input.value))
         input.value = ''
       }}>
-        Account name: <input ref={node => {
-          input = node
+        Account name: <input ref={accountName => {
+          input = accountName
         }} />
         <button type="submit">
           Add Account

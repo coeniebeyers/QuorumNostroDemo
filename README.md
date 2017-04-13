@@ -1,5 +1,4 @@
 [![Stories in Ready](https://badge.waffle.io/coeniebeyers/QuorumNostroDemo.png?label=ready&title=Ready)](https://waffle.io/coeniebeyers/QuorumNostroDemo)
-
 [![Build Status](https://travis-ci.org/coeniebeyers/QuorumNostroDemo.svg?branch=master)](https://travis-ci.org/coeniebeyers/QuorumNostroDemo)
 
 # QuorumNostroDemo

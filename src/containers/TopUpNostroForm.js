@@ -1,50 +1,18 @@
-import React from 'react'
 import { connect } from 'react-redux'
-import { addAccount } from '../actions'
+import { topUpNostro } from '../actions'
+import TopUpNostroAmount from '../components/TopUpNostroAmount'
 
-let TopUpNostroForm = ({ dispatch }) => {
-  let amountRequired = "0";
-  let amountToPay = "0";
+const mapStateToProps = (state) => ({
+	selectedNostroAgreement: state.selectedNostroAgreement
+})
 
-  return (
-    <div>
-      <form onSubmit={e => {
-        e.preventDefault()
-        if (!amountRequired.value.trim()) {
-          return
-        }
-        dispatch(addAccount("1234"))
-      }}>
-				<table>
-					<tbody>
-						<tr>
-							<td>Amount Required (Currency1)</td>
-							<td>
-								<input ref={ aReq => {amountRequired = aReq}} />
-							</td>
-						</tr>
-						<tr>
-							<td>&nbsp;</td>
-							<td><button>Request Rate</button></td>
-						</tr>
-						<tr>
-							<td>Amount to pay (Currency2)</td>
-							<td>{amountToPay}</td>
-						</tr>
-						<tr>
-							<td>&nbsp;</td>
-							<td>
-								<button type="submit">
-									Top up Nostro Account
-								</button>
-							</td>
-						</tr>
-					</tbody>
-				</table>
-      </form>
-    </div>
-  )
+const mapDispatchToProps = {
+  onClickTopUpNostro: topUpNostro
 }
-TopUpNostroForm = connect()(TopUpNostroForm)
+
+const TopUpNostroForm = connect(
+  mapStateToProps,
+  mapDispatchToProps
+)(TopUpNostroAmount)
 
 export default TopUpNostroForm

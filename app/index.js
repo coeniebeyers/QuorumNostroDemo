@@ -21,7 +21,7 @@ addressBook.SetWeb3(web3);
 addressBook.SetWeb3IPC(web3IPC);
 addressBook.SetWhisperId(myId);
 
-var nodeIdentityName = 'Consensys';
+var nodeIdentityName = process.env.NODE_IDENTITY
 // TODO: rename object collections to mappings
 var constellationNodes = {};
 // TODO: rename object collections to mappings

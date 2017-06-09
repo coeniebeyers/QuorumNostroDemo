@@ -1,7 +1,7 @@
 require('es6-promise').polyfill();
 import fetch from 'isomorphic-fetch'
 
-let ipAddressAndPort = 'http://localhost:4000'
+let ipAddressAndPort = process.env.REACT_APP_API_URL
 
 let nextAccountId = 0;
 export const REQUEST_NEW_ACCOUNT = 'REQUEST_NEW_ACCOUNT'

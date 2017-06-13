@@ -57,9 +57,17 @@ api.get('/getNostroAgreements', function(req, res) {
   res.send(JSON.stringify(nostroAgreements));
 });
 
+var busyGettingNostroBalances = false
+var balances = []
 api.get('/getNostroBalances', function(req, res) {
-  var balances = app.GetNostroBalances();
-  res.send(balances);
+  if(!busyGettingNostroBalances){
+    busyGettingNostroBalances = true
+    balances = app.GetNostroBalances()
+    res.send(balances)
+    busyGettingNostroBalances = false
+  } else {
+    res.send(balances)
+  }
 });
 
 let port = 4000;
